@@ -2,8 +2,6 @@
 <img src="figures/logolatent.png" width="520">
 </p>
 
-<h1 align="center">LatentGait</h1>
-
 <p align="center">
 Wearable trunk biomechanics · Bayesian latent modeling · Threshold-based fall risk
 </p>
