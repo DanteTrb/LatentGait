@@ -1,12 +1,16 @@
 # LatentGait
 
-## Latent gait instability underlying falls occurrence in Parkinson’s disease
+![Conceptual framework](figures/Figure1.png)
+
+### Latent gait instability underlying falls occurrence in Parkinson’s disease
+
+<p align="center">
+Wearable trunk biomechanics · Bayesian latent modeling · Threshold-based fall risk
+</p>
 
 A **Bayesian latent-variable framework** for identifying biomechanical instability and **threshold-based fall susceptibility** from wearable trunk accelerations.
 
-![Conceptual framework](figures/Figure1.png)
-
-**Figure 1.** Conceptual and analytical framework of the Bayesian latent-threshold model for fall occurrence in Parkinson’s disease.
+*Figure 1. Conceptual and analytical framework of the Bayesian latent-threshold model for fall occurrence in Parkinson’s disease.*
 
 ---
 
