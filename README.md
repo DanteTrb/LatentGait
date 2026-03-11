@@ -162,10 +162,11 @@ Create the conda environment:
 conda env create -f environment.yml
 conda activate latent-gait
 jupyter lab
-Data Availability
 ```
 
 ---
+
+## Data Availability
 
 Clinical datasets used in this study are not publicly distributed in this repository due to ethical and privacy restrictions.
 
@@ -178,9 +179,13 @@ Expected inputs include subject-level clinical variables and processed biomechan
 The pipeline relies primarily on:
 
 PyMC for Bayesian inference
+
 ArviZ for posterior diagnostics and summarization
+
 scikit-learn for preprocessing and dimensionality reduction
+
 statsmodels for contrast analyses
+
 pandas / NumPy / matplotlib / seaborn for data handling and visualization
 
 Random seeds are fixed where appropriate to support reproducibility.
