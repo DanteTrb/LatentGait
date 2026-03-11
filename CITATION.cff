@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+title: LatentGait
+message: "If you use this repository, please cite the following work."
+authors:
+  - family-names: Trabassi
+    given-names: Dante
+doi: 10.5281/zenodo.18961895
+repository-code: https://github.com/DanteTrb/LatentGait
+license: MIT

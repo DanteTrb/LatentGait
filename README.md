@@ -12,6 +12,7 @@ Wearable trunk biomechanics · Bayesian latent modeling · Threshold-based fall 
 ![Bayesian Model](https://img.shields.io/badge/model-Bayesian-orange)
 ![Wearable Biomechanics](https://img.shields.io/badge/domain-wearable%20biomechanics-purple)
 ![License](https://img.shields.io/badge/license-MIT-green)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18961895.svg)](https://doi.org/10.5281/zenodo.18961895)
 
 </p>
 
@@ -197,6 +198,10 @@ If you use this repository or build upon this framework, please cite:
 >Trabassi D. et al (NPJ DM)..
 
 **"Latent gait instability underlying falls occurrence in Parkinson’s disease."**
+
+>Zenodo release of the computational pipeline:
+
+**https://doi.org/10.5281/zenodo.18961895**
 
 Bibliographic details will be updated upon publication.
 
