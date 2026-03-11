@@ -24,7 +24,7 @@ Using trunk accelerometry recorded during walking, the analytical pipeline:
 3. integrates these axes within a Bayesian latent-variable model  
 4. estimates subject-specific latent gait instability with explicit uncertainty  
 5. models fall occurrence as a threshold-dependent probabilistic event  
-6. quantifies counterfactual reductions in fall probability under hypothetical improvements in instability :contentReference[oaicite:3]{index=3}
+6. quantifies counterfactual reductions in fall probability under hypothetical improvements in instability
 
 This repository contains the computational workflow underlying the study.
 
@@ -43,7 +43,7 @@ This repository contains the computational workflow underlying the study.
 
 ## Conceptual Framework
 
-The core hypothesis is that falls do not arise directly from any single observed gait metric. Instead, they emerge when a continuous latent instability process crosses a probabilistic threshold. This framing separates biomechanical structure from downstream clinical manifestation and supports uncertainty-aware inference at the individual level. :contentReference[oaicite:4]{index=4}
+The core hypothesis is that falls do not arise directly from any single observed gait metric. Instead, they emerge when a continuous latent instability process crosses a probabilistic threshold. This framing separates biomechanical structure from downstream clinical manifestation and supports uncertainty-aware inference at the individual level.
 
 ![Causal framework](figures/Figure2.png)
 
@@ -54,7 +54,7 @@ Key conceptual points:
 - Falls are modeled as **thresholded manifestations** of latent gait instability  
 - Trunk-derived biomechanical domains are treated as **indicators of an underlying instability construct**  
 - Downstream functional and clinical variables are not used to define the exposure itself  
-- Uncertainty in latent instability is explicitly propagated into downstream fall models :contentReference[oaicite:5]{index=5}
+- Uncertainty in latent instability is explicitly propagated into downstream fall models
 
 ---
 
@@ -68,7 +68,7 @@ Trunk acceleration features are grouped a priori into three physiologically grou
 - **Neuromotor complexity**
 - **Lower trunk kinematics**
 
-Principal component analysis (PCA) is applied separately within each domain, and the first principal component is retained to define a scale-normalized latent axis for that domain. This domain-wise strategy preserves interpretability and avoids mixing mathematically heterogeneous gait descriptors in a single undifferentiated reduction step. :contentReference[oaicite:6]{index=6}
+Principal component analysis (PCA) is applied separately within each domain, and the first principal component is retained to define a scale-normalized latent axis for that domain. This domain-wise strategy preserves interpretability and avoids mixing mathematically heterogeneous gait descriptors in a single undifferentiated reduction step.
 
 ### 2. Bayesian latent gait instability model
 
@@ -76,7 +76,7 @@ The three domain-specific axes are then integrated within a Bayesian hierarchica
 
 ### 3. Contrast analysis with gait speed
 
-As a functional contrast, gait speed is modeled separately to verify whether conventional spatiotemporal outcomes exhibit the same structural properties as latent instability. In the supplementary analysis, gait speed shows limited explanatory power and does not display threshold-like organization, supporting the interpretation that the main threshold behavior is specific to the latent instability framework rather than a generic property of gait measures. :contentReference[oaicite:8]{index=8}
+As a functional contrast, gait speed is modeled separately to verify whether conventional spatiotemporal outcomes exhibit the same structural properties as latent instability. In the supplementary analysis, gait speed shows limited explanatory power and does not display threshold-like organization, supporting the interpretation that the main threshold behavior is specific to the latent instability framework rather than a generic property of gait measures.
 
 ### 4. Bayesian fall-occurrence model
 
@@ -86,13 +86,13 @@ Latent gait instability is related to fall occurrence through a Bayesian logisti
 
 ## Threshold Model and Counterfactual Inference
 
-The central contribution of the study is the Bayesian probit threshold formulation of fall occurrence. Under this model, fall probability is a smooth but sharply transitioning function of latent gait instability, with a threshold parameter τ defining the instability level at which fall probability crosses 50%. The model identifies low-risk, transition, and high-risk regimes along the latent instability continuum. :contentReference[oaicite:10]{index=10}
+The central contribution of the study is the Bayesian probit threshold formulation of fall occurrence. Under this model, fall probability is a smooth but sharply transitioning function of latent gait instability, with a threshold parameter τ defining the instability level at which fall probability crosses 50%. The model identifies low-risk, transition, and high-risk regimes along the latent instability continuum.
 
-![Threshold model](../figures/Figure6.svg)
+![Threshold model](figures/Figure6.svg)
 
 **Figure 3.** Threshold-based organization of fall risk along the latent gait instability continuum and counterfactual fall-risk reduction under hypothetical improvements in instability.
 
-This framework also enables **counterfactual benefit mapping**. Hypothetical reductions in latent instability are propagated through the posterior threshold model to estimate absolute changes in fall probability. The analysis shows that the largest expected benefit is concentrated near the inferred transition zone, whereas gains are attenuated at the lowest and highest ends of the instability spectrum. :contentReference[oaicite:11]{index=11}
+This framework also enables **counterfactual benefit mapping**. Hypothetical reductions in latent instability are propagated through the posterior threshold model to estimate absolute changes in fall probability. The analysis shows that the largest expected benefit is concentrated near the inferred transition zone, whereas gains are attenuated at the lowest and highest ends of the instability spectrum. 
 
 ---
 
@@ -169,8 +169,9 @@ Random seeds are fixed where appropriate to support reproducibility.
 ## Citation
 
 If you use this repository or build upon this framework, please cite:
+
 Trabassi D, Castiglia SF, De Icco R, Tassorelli C, Serrao M.
-**Latent gait instability underlying falls occurrence in Parkinson’s disease.**
+**"Latent gait instability underlying falls occurrence in Parkinson’s disease."**
 
 Bibliographic details will be updated upon publication.
 
