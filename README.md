@@ -170,7 +170,7 @@ Random seeds are fixed where appropriate to support reproducibility.
 
 If you use this repository or build upon this framework, please cite:
 
->Trabassi D. et al..
+>Trabassi D. et al (NPJ DM)..
 
 **"Latent gait instability underlying falls occurrence in Parkinson’s disease."**
 
