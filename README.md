@@ -88,7 +88,7 @@ Latent gait instability is related to fall occurrence through a Bayesian logisti
 
 The central contribution of the study is the Bayesian probit threshold formulation of fall occurrence. Under this model, fall probability is a smooth but sharply transitioning function of latent gait instability, with a threshold parameter τ defining the instability level at which fall probability crosses 50%. The model identifies low-risk, transition, and high-risk regimes along the latent instability continuum. :contentReference[oaicite:10]{index=10}
 
-![Threshold model](figures/Figure6.svg)
+![Threshold model](../figures/Figure6.svg)
 
 **Figure 3.** Threshold-based organization of fall risk along the latent gait instability continuum and counterfactual fall-risk reduction under hypothetical improvements in instability.
 
