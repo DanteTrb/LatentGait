@@ -4,7 +4,7 @@
 
 A **Bayesian latent-variable framework** for identifying biomechanical instability and **threshold-based fall susceptibility** from wearable trunk accelerations.
 
-![Conceptual framework](figures/Figure1.png)
+![Conceptual framework](figures/Figure1.pdf)
 
 **Figure 1.** Conceptual and analytical framework of the Bayesian latent-threshold model for fall occurrence in Parkinson’s disease.
 
