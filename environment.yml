@@ -1,0 +1,34 @@
+name: latent-gait
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.10
+
+  # Core
+  - numpy
+  - pandas
+  - scipy
+
+  # Visualization
+  - matplotlib
+  - seaborn
+
+  # Machine learning
+  - scikit-learn
+
+  # Bayesian modeling
+  - pymc
+  - arviz
+  - pytensor
+
+  # Statistics
+  - statsmodels
+
+  # Notebooks
+  - jupyterlab
+  - ipywidgets
+  - tqdm
+
+  # File formats
+  - openpyxl
