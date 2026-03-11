@@ -2,11 +2,9 @@
 
 ## Latent gait instability underlying falls occurrence in Parkinson’s disease
 
-A Bayesian latent-variable framework for identifying biomechanical instability and threshold-based fall susceptibility from wearable trunk accelerations.
+A **Bayesian latent-variable framework** for identifying biomechanical instability and **threshold-based fall susceptibility** from wearable trunk accelerations.
 
-<p align="center">
-  <img src="figures/Figure1.png" width="900">
-</p>
+![Conceptual framework](figures/Figure1.png)
 
 **Figure 1.** Conceptual and analytical framework of the Bayesian latent-threshold model for fall occurrence in Parkinson’s disease.
 
@@ -14,7 +12,8 @@ A Bayesian latent-variable framework for identifying biomechanical instability a
 
 ## Overview
 
-Falls in Parkinson’s disease (PD) are commonly interpreted as a downstream consequence of overall clinical severity or as the result of isolated gait abnormalities. In this study, we adopt a different perspective: fall occurrence is modeled as the manifestation of an underlying **latent gait instability process** inferred from wearable trunk biomechanics, rather than from single gait features considered independently. :contentReference[oaicite:2]{index=2}
+Falls in Parkinson’s disease (PD) are commonly interpreted as downstream consequences of global clinical severity or isolated gait impairments.  
+This study adopts a different perspective: fall occurrence is modeled as the manifestation of an **underlying latent gait instability process** inferred from wearable trunk biomechanics.
 
 > Falls emerge when a latent gait instability process crosses a probabilistic threshold.
 
@@ -31,13 +30,22 @@ This repository contains the computational workflow underlying the study.
 
 ---
 
+## Key Contributions
+
+- Causal role specification using an explicit DAG
+- Domain-structured biomechanical representation of trunk dynamics
+- Bayesian latent-variable modeling of gait instability
+- Explicit propagation of measurement uncertainty
+- Threshold-based probabilistic modeling of fall occurrence
+- Counterfactual estimation of instability-dependent fall-risk reduction
+
+---
+
 ## Conceptual Framework
 
 The core hypothesis is that falls do not arise directly from any single observed gait metric. Instead, they emerge when a continuous latent instability process crosses a probabilistic threshold. This framing separates biomechanical structure from downstream clinical manifestation and supports uncertainty-aware inference at the individual level. :contentReference[oaicite:4]{index=4}
 
-<p align="center">
-  <img src="figures/Figure2.png" width="760">
-</p>
+![Causal framework](figures/Figure2.png)
 
 **Figure 2.** Exposure derivation and causal structure of the analytical framework. Latent gait-related exposures are derived from trunk biomechanical domains and embedded within a causal DAG specifying confounders and downstream variables.
 
@@ -80,9 +88,7 @@ Latent gait instability is related to fall occurrence through a Bayesian logisti
 
 The central contribution of the study is the Bayesian probit threshold formulation of fall occurrence. Under this model, fall probability is a smooth but sharply transitioning function of latent gait instability, with a threshold parameter τ defining the instability level at which fall probability crosses 50%. The model identifies low-risk, transition, and high-risk regimes along the latent instability continuum. :contentReference[oaicite:10]{index=10}
 
-<p align="center">
-  <img src="figures/Figure6.png" width="900">
-</p>
+![Threshold model](figures/Figure6.png)
 
 **Figure 3.** Threshold-based organization of fall risk along the latent gait instability continuum and counterfactual fall-risk reduction under hypothetical improvements in instability.
 
