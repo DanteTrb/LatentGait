@@ -6,4 +6,15 @@ __pycache__
 data/raw/*
 data/processed/*
 !data/raw/.gitkeep
-!data/processed/.gitkeep
+!data/processed/.gitkeep.virtual_documents/
+
+# Jupyter temporary files
+.virtual_documents/
+
+# Generated results and model outputs
+results/
+*.nc
+
+# Generated notebook outputs
+notebooks/*.csv
+notebooks/Fig_X_*

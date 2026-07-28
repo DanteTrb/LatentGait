@@ -1,118 +1,35 @@
-<p align="center">
-<img src="figures/logolatent.png" width="520">
-</p>
+# LatentGait
 
-<p align="center">
-Wearable trunk biomechanics · Bayesian latent modeling · Threshold-based fall risk
-</p>
-
-<p align="center">
-
-![Python](https://img.shields.io/badge/python-3.10-blue)
-![Bayesian Model](https://img.shields.io/badge/model-Bayesian-orange)
-![Wearable Biomechanics](https://img.shields.io/badge/domain-wearable%20biomechanics-purple)
-![License](https://img.shields.io/badge/license-MIT-green)
+[![Python](https://img.shields.io/badge/python-3.10-blue)]()
+[![Bayesian Model](https://img.shields.io/badge/model-Bayesian-orange)]()
+[![Wearable Biomechanics](https://img.shields.io/badge/domain-wearable%20biomechanics-purple)]()
+[![License](https://img.shields.io/badge/license-MIT-green)]()
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18961895.svg)](https://doi.org/10.5281/zenodo.18961895)
 
-</p>
+Analytical code and revised manuscript figures for:
 
-LatentGait implements a **Bayesian latent-variable framework** for identifying biomechanical instability and **threshold-based fall susceptibility** from wearable trunk accelerations in Parkinson’s disease.
+**Latent gait instability underlying retrospective fall occurrence in Parkinson’s disease**
 
----
-
-## Conceptual Framework
-
-<p align="center">
-<img src="figures/Figure1.png" width="900">
-</p>
-
-**Figure 1.** Conceptual and analytical framework of the Bayesian latent-threshold model for fall occurrence in Parkinson’s disease.
+This repository contains the computational workflow supporting the revised manuscript. The analyses estimate a wearable-derived latent gait-instability construct from trunk biomechanics and examine its association with retrospective fall occurrence in Parkinson’s disease.
 
 ---
 
 ## Overview
 
-Falls in Parkinson’s disease (PD) are commonly interpreted as downstream consequences of global clinical severity or isolated gait impairments.  
-This study adopts a different perspective: fall occurrence is modeled as the manifestation of an **underlying latent gait instability process** inferred from wearable trunk biomechanics.
+Falls in Parkinson’s disease are multifactorial and are not expected to be fully explained by any single gait metric. This project evaluates whether trunk-derived wearable gait features can be integrated into a latent biomechanical construct representing gait instability, and whether this construct is associated with retrospective fall occurrence.
 
-> Falls emerge when a latent gait instability process crosses a probabilistic threshold.
+The workflow includes:
 
-Using trunk accelerometry recorded during walking, the analytical pipeline:
+1. definition of the analytical variables and conceptual roles;
+2. derivation of domain-specific trunk biomechanical axes;
+3. Bayesian latent-variable modeling of gait instability;
+4. comparison with gait speed as a conventional spatiotemporal descriptor;
+5. Bayesian modeling of retrospective fall occurrence;
+6. model-based threshold-region and hypothetical instability-reduction contrasts;
+7. peer-review sensitivity analyses for additional covariate adjustment;
+8. supplementary PCA summaries for domain-axis interpretation.
 
-1. derives domain-specific biomechanical representations from wearable signals  
-2. reduces each domain into an interpretable latent axis  
-3. integrates these axes within a Bayesian latent-variable model  
-4. estimates subject-specific latent gait instability with explicit uncertainty  
-5. models fall occurrence as a threshold-dependent probabilistic event  
-6. quantifies counterfactual reductions in fall probability under hypothetical improvements in instability
-
-This repository contains the computational workflow underlying the study.
-
----
-
-## Key Contributions
-
-- Causal role specification using an explicit DAG
-- Domain-structured biomechanical representation of trunk dynamics
-- Bayesian latent-variable modeling of gait instability
-- Explicit propagation of measurement uncertainty
-- Threshold-based probabilistic modeling of fall occurrence
-- Counterfactual estimation of instability-dependent fall-risk reduction
-
----
-
-## Conceptual Framework
-
-The core hypothesis is that falls do not arise directly from any single observed gait metric. Instead, they emerge when a continuous latent instability process crosses a probabilistic threshold. This framing separates biomechanical structure from downstream clinical manifestation and supports uncertainty-aware inference at the individual level.
-
-![Causal framework](figures/Figure2.png)
-
-**Figure 2.** Exposure derivation and causal structure of the analytical framework. Latent gait-related exposures are derived from trunk biomechanical domains and embedded within a causal DAG specifying confounders and downstream variables.
-
-Key conceptual points:
-
-- Falls are modeled as **thresholded manifestations** of latent gait instability  
-- Trunk-derived biomechanical domains are treated as **indicators of an underlying instability construct**  
-- Downstream functional and clinical variables are not used to define the exposure itself  
-- Uncertainty in latent instability is explicitly propagated into downstream fall models
-
----
-
-## Methods Summary
-
-### 1. Domain-specific biomechanical representation
-
-Trunk acceleration features are grouped a priori into three physiologically grounded domains:
-
-- **Rhythmicity and recurrence**
-- **Neuromotor complexity**
-- **Lower trunk kinematics**
-
-Principal component analysis (PCA) is applied separately within each domain, and the first principal component is retained to define a scale-normalized latent axis for that domain. This domain-wise strategy preserves interpretability and avoids mixing mathematically heterogeneous gait descriptors in a single undifferentiated reduction step.
-
-### 2. Bayesian latent gait instability model
-
-The three domain-specific axes are then integrated within a Bayesian hierarchical latent-variable model. This yields a continuous subject-level latent gait instability estimate together with participant-specific posterior uncertainty. Lower trunk kinematics is used as the anchoring indicator for model identification, while the remaining domains contribute probabilistically to the shared latent construct. 
-
-### 3. Contrast analysis with gait speed
-
-As a functional contrast, gait speed is modeled separately to verify whether conventional spatiotemporal outcomes exhibit the same structural properties as latent instability. In the supplementary analysis, gait speed shows limited explanatory power and does not display threshold-like organization, supporting the interpretation that the main threshold behavior is specific to the latent instability framework rather than a generic property of gait measures.
-
-### 4. Bayesian fall-occurrence model
-
-Latent gait instability is related to fall occurrence through a Bayesian logistic model to assess preliminary monotonic association. This step evaluates whether increasing latent instability is associated with increasing posterior probability of falling, while accounting for covariates and measurement uncertainty. 
-
----
-
-## Threshold Model and Counterfactual Inference
-
-The central contribution of the study is the Bayesian probit threshold formulation of fall occurrence. Under this model, fall probability is a smooth but sharply transitioning function of latent gait instability, with a threshold parameter τ defining the instability level at which fall probability crosses 50%. The model identifies low-risk, transition, and high-risk regimes along the latent instability continuum.
-
-![Threshold model](figures/Figure6.png)
-
-**Figure 3.** Threshold-based organization of fall risk along the latent gait instability continuum and counterfactual fall-risk reduction under hypothetical improvements in instability.
-
-This framework also enables **counterfactual benefit mapping**. Hypothetical reductions in latent instability are propagated through the posterior threshold model to estimate absolute changes in fall probability. The analysis shows that the largest expected benefit is concentrated near the inferred transition zone, whereas gains are attenuated at the lowest and highest ends of the instability spectrum. 
+The repository is intended to document the analytical workflow used for the manuscript, not to provide a deployed clinical prediction tool.
 
 ---
 
@@ -120,90 +37,143 @@ This framework also enables **counterfactual benefit mapping**. Hypothetical red
 
 ```text
 notebooks/
-├── 01_exposure_definition_and_causal_roles.ipynb
+├── 01_exposure_definition_and_conceptual_roles.ipynb
 ├── 02_latent_trunk_axes.ipynb
-├── 03_spatiotemporal_latent_gait_instability.ipynb
+├── 03_spatiotemporal_latent gait instability.ipynb
 ├── 04_contrast_gait_speed.ipynb
 ├── 05_bayesian_latent_gait_instability_and_falls_occurrence.ipynb
-└── 06_threshold_counterfactual_falls.ipynb
+└── 06_threshold_hypothetical_contrasts.ipynb
+
+scripts/
+├── 07_sensitivity_covariate_adjustment_bayesian.py
+└── 08_pca_domain_axes_summary.py
+
+figures/
+├── Figure1_revised.pdf
+├── Figure2_revised.pdf
+├── Figure3_revised.pdf
+├── Figure4_revised.pdf
+├── FigureS1_revised.pdf
+└── FigureS2_revised.pdf
 ```
 
-- **01_exposure_definition_and_causal_roles.ipynb**
-Defines the causal structure of the study, including exposures, outcomes, confounders, and forbidden adjustments.
+---
 
-- **02_latent_trunk_axes.ipynb**
-Builds the domain-specific latent biomechanical axes from trunk-derived gait features using PCA.
+## Analytical Workflow
 
-- **03_spatiotemporal_latent_gait_instability.ipynb**
-Implements the Bayesian latent-variable model used to infer subject-specific latent gait instability.
+### 1. Conceptual and analytical variable definition
 
-- **04_contrast_gait_speed.ipynb**
-Performs the contrast analysis showing the limited explanatory role of gait speed as a standalone outcome.
+`01_exposure_definition_and_conceptual_roles.ipynb`
 
-- **05_bayesian_latent_gait_instability_and_falls_occurrence.ipynb**
-Fits the Bayesian model linking latent gait instability to fall occurrence.
+Defines the analytical dataset structure, retrospective fall-occurrence outcome, candidate biomechanical descriptors, and the conceptual roles of clinical and gait variables used in the manuscript.
 
-- **06_threshold_counterfactual_falls.ipynb**
-Implements the probit threshold model and the counterfactual fall-risk reduction analyses.
+### 2. Domain-specific trunk biomechanical axes
 
-## Methodological Contributions
+`02_latent_trunk_axes.ipynb`
 
-Causal role specification guided by an explicit DAG
-Domain-specific dimensionality reduction of wearable trunk biomechanics
-Bayesian latent-variable modeling of gait instability
-Propagation of latent measurement uncertainty into downstream inference
-Threshold-based probabilistic modeling of fall occurrence
-Counterfactual estimation of instability-dependent fall-risk reduction
+Groups trunk-derived wearable features into biomechanical domains and derives domain-specific axes using principal component analysis.
 
-## Installation
+The main domains include:
 
-Create the conda environment:
+- rhythmicity and recurrence;
+- neuromotor complexity;
+- lower trunk kinematics.
 
-```bash
-conda env create -f environment.yml
-conda activate latent-gait
-jupyter lab
-```
+### 3. Bayesian latent gait-instability model
+
+`03_spatiotemporal_latent gait instability.ipynb`
+
+Fits the Bayesian latent-variable model used to estimate participant-level latent gait instability from the domain-specific trunk biomechanical axes.
+
+### 4. Contrast analysis with gait speed
+
+`04_contrast_gait_speed.ipynb`
+
+Evaluates gait speed as a conventional spatiotemporal comparator and examines whether the latent gait-instability construct captures information not reducible to gait speed alone.
+
+### 5. Bayesian fall-occurrence model
+
+`05_bayesian_latent_gait_instability_and_falls_occurrence.ipynb`
+
+Models the association between latent gait instability and retrospective fall occurrence using Bayesian regression.
+
+### 6. Threshold-region and hypothetical contrasts
+
+`06_threshold_hypothetical_contrasts.ipynb`
+
+Evaluates a model-estimated transition region along the latent gait-instability continuum and estimates model-based hypothetical changes in fall-occurrence probability under reduced latent instability.
+
+### 7. Peer-review sensitivity analyses
+
+`scripts/07_sensitivity_covariate_adjustment_bayesian.py`
+
+Runs additional Bayesian covariate-adjustment sensitivity analyses requested during peer review, including adjustment for clinical severity and gait-related covariates.
+
+### 8. PCA domain-axis summaries
+
+`scripts/08_pca_domain_axes_summary.py`
+
+Generates supplementary PCA summaries for the trunk biomechanical domains, including additional rhythmicity-recurrence components.
+
+---
+
+## Figures
+
+Final revised manuscript figures are stored in `figures/`.
+
+- `Figure1_revised.pdf`: revised analytical/conceptual workflow.
+- `Figure2_revised.pdf`: revised latent gait-instability modeling framework.
+- `Figure3_revised.pdf`: revised association between latent gait instability and retrospective fall occurrence.
+- `Figure4_revised.pdf`: revised threshold-region and hypothetical contrast analysis.
+- `FigureS1_revised.pdf`: revised supplementary figure S1.
+- `FigureS2_revised.pdf`: revised supplementary figure S2.
 
 ---
 
 ## Data Availability
 
-Clinical datasets used in this study are not publicly distributed in this repository due to ethical and privacy restrictions.
+The clinical and wearable datasets used in the manuscript are not distributed in this repository because of ethical, privacy, and institutional restrictions.
 
-The repository provides the complete analytical workflow, but users must supply their own datasets with equivalent structure to reproduce the analysis.
+This repository provides the analytical code and revised manuscript figures. To reproduce the full analysis, users must supply an equivalent dataset with the same analytical structure used by the notebooks and scripts.
 
-Expected inputs include subject-level clinical variables and processed biomechanical domain representations compatible with the notebooks in this repository.
+---
 
 ## Reproducibility
 
-The pipeline relies primarily on:
+The workflow was developed in Python and uses standard scientific-computing and Bayesian-analysis libraries, including:
 
-PyMC for Bayesian inference
+- PyMC;
+- ArviZ;
+- pandas;
+- NumPy;
+- scikit-learn;
+- statsmodels;
+- matplotlib;
+- seaborn.
 
-ArviZ for posterior diagnostics and summarization
+Random seeds are fixed where appropriate to improve reproducibility.
 
-scikit-learn for preprocessing and dimensionality reduction
+Notebook cell outputs and generated result files are intentionally not stored in the repository. The repository is organized to document the computational workflow rather than to archive intermediate generated outputs.
 
-statsmodels for contrast analyses
-
-pandas / NumPy / matplotlib / seaborn for data handling and visualization
-
-Random seeds are fixed where appropriate to support reproducibility.
+---
 
 ## Citation
 
-If you use this repository or build upon this framework, please cite:
+If you use this repository or build upon this analytical framework, please cite the associated manuscript and Zenodo release.
 
->Trabassi D. et al (NPJ DM)..
+**Manuscript**
 
-**"Latent gait instability underlying falls occurrence in Parkinson’s disease."**
-
->Zenodo release of the computational pipeline:
-
-**https://doi.org/10.5281/zenodo.18961895**
+Trabassi D. et al.  
+*Latent gait instability underlying retrospective fall occurrence in Parkinson’s disease.*
 
 Bibliographic details will be updated upon publication.
 
+**Repository DOI**
+
+https://doi.org/10.5281/zenodo.18961895
+
+---
+
 ## License
+
 This repository is released under the MIT License.
