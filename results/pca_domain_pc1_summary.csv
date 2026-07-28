@@ -1,0 +1,4 @@
+Domain,N_complete,N_features,PC1_explained_variance_percent,Correlation_with_existing_axis_after_orientation
+Rhythmicity-recurrence,263,9,30.86329102215368,0.9999990297018473
+Neuromotor complexity,261,3,61.082717412531906,0.999999987967464
+Lower trunk kinematics,272,3,52.87431019174631,0.9999999997114122
