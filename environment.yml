@@ -29,6 +29,8 @@ dependencies:
   - jupyterlab
   - ipywidgets
   - tqdm
+  - nbformat
+  - nbclient
 
   # File formats
   - openpyxl

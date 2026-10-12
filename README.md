@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/badge/license-MIT-green)]()
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18961895.svg)](https://doi.org/10.5281/zenodo.18961895)
 
-Analytical code and revised manuscript figures for:
+Analytical code for:
 
 **Latent gait instability underlying retrospective fall occurrence in Parkinson’s disease**
 
@@ -42,19 +42,23 @@ notebooks/
 ├── 03_spatiotemporal_latent gait instability.ipynb
 ├── 04_contrast_gait_speed.ipynb
 ├── 05_bayesian_latent_gait_instability_and_falls_occurrence.ipynb
-└── 06_threshold_hypothetical_contrasts.ipynb
+├── 06_threshold_hypothetical_contrasts.ipynb
+├── 08_model_form_sensitivity.ipynb
+├── 09_pca_component_sensitivity.ipynb
+└── 10_post_second_round_review_simulation.ipynb
 
 scripts/
 ├── 07_sensitivity_covariate_adjustment_bayesian.py
-└── 08_pca_domain_axes_summary.py
+├── 08_pca_domain_axes_summary.py
+└── check_code_only.py
 
-figures/
-├── Figure1_revised.pdf
-├── Figure2_revised.pdf
-├── Figure3_revised.pdf
-├── Figure4_revised.pdf
-├── FigureS1_revised.pdf
-└── FigureS2_revised.pdf
+simulation/
+├── README.md
+├── __init__.py
+└── pipeline.py
+
+tests/
+└── test_simulation.py
 ```
 
 ---
@@ -117,16 +121,36 @@ Generates supplementary PCA summaries for the trunk biomechanical domains, inclu
 
 ---
 
-## Figures
+## Post second-round review code
 
-Final revised manuscript figures are stored in `figures/`.
+The `simulation/` folder and notebook 10 are separate from the clinical analyses.
+They generate independent synthetic individuals (default N=269), fit measurement,
+association and functional-form models, and evaluate model-defined derivative
+regions. They do not relabel clinical records or reproduce empirical manuscript
+estimates. See
+[simulation/README.md](simulation/README.md) for commands, assumptions and limits.
 
-- `Figure1_revised.pdf`: revised analytical/conceptual workflow.
-- `Figure2_revised.pdf`: revised latent gait-instability modeling framework.
-- `Figure3_revised.pdf`: revised association between latent gait instability and retrospective fall occurrence.
-- `Figure4_revised.pdf`: revised threshold-region and hypothetical contrast analysis.
-- `FigureS1_revised.pdf`: revised supplementary figure S1.
-- `FigureS2_revised.pdf`: revised supplementary figure S2.
+Notebook 08 compares functional forms on clinical data; notebook 09 examines
+component retention. Their source code is retained. The existing scripts 07 and
+08 are also retained because covariate-adjustment analysis and PCA summary
+generation are distinct tasks, not redundant replacements for those notebooks.
+
+## Code-only distribution
+
+Generated figures, tables, datasets and model outputs are not part of the current
+tracked tree. Existing local figures can remain in the ignored `figures/` folder.
+Older Git commits may still contain previously published figures. Synthetic-run
+outputs must be saved outside this repository.
+
+Before committing, run:
+
+```sh
+python scripts/check_code_only.py --strip
+python scripts/check_code_only.py
+```
+
+This preserves notebook source cells while clearing saved outputs and execution
+counts. A GitHub Actions check rejects saved cell outputs and tracked artifacts.
 
 ---
 
@@ -134,7 +158,9 @@ Final revised manuscript figures are stored in `figures/`.
 
 The clinical and wearable datasets used in the manuscript are not distributed in this repository because of ethical, privacy, and institutional restrictions.
 
-This repository provides the analytical code and revised manuscript figures. To reproduce the full analysis, users must supply an equivalent dataset with the same analytical structure used by the notebooks and scripts.
+This repository provides analytical code. To reproduce the clinical analysis,
+users must supply an authorized dataset with the analytical structure required
+by the clinical notebooks and scripts. Synthetic experiments need no clinical data.
 
 ---
 
