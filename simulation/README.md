@@ -1,4 +1,4 @@
-# Post second-round review: simulation code
+# Post second-round review: methodological analyses
 
 This folder is separate from the clinical notebooks. It does not read, relabel,
 duplicate or aggregate patient records. By default it generates **269 genuinely

@@ -121,7 +121,7 @@ Generates supplementary PCA summaries for the trunk biomechanical domains, inclu
 
 ---
 
-## Post second-round review code
+## Post second-round review: methodological analyses
 
 The `simulation/` folder and notebook 10 are separate from the clinical analyses.
 They generate independent synthetic individuals (default N=269), fit measurement,
