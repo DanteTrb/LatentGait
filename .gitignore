@@ -22,7 +22,7 @@ notebooks/Fig_X_*
 # Code-only distribution: preserve artifacts locally, never publish them.
 figures/
 outputs/
-simulation_outputs/
+review_outputs/
 *.pdf
 *.png
 *.pkl

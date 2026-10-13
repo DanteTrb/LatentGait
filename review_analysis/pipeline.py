@@ -1,7 +1,6 @@
-"""Synthetic-only experiments. No clinical files are read; no results are forced.
+"""Post second-round review: additional analyses on an external participant table.
 
-Run from the repository root: python -m simulation.pipeline --scenario gradual
-Outputs go outside the repository by default. --smoke checks plumbing only.
+No dataset generation or automatic fallback. See review_analysis/README.md.
 """
 from __future__ import annotations
 
@@ -18,36 +17,9 @@ from scipy.special import ndtr
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
-DOMAINS = {'kinematics': 3, 'rhythmicity': 9, 'complexity': 3}
-SCENARIOS = {'null': 0.0, 'gradual': 0.25, 'transition': 0.90}
-DISCLAIMER = 'SYNTHETIC ONLY - NOT CLINICAL RESULTS - NO TREATMENT EFFECTS'
+from .inputs import load_participant_table
 
-
-def generate_data(n=269, seed=20261012, scenario='gradual'):
-    """Fixed generating mechanism; no seed search or outcome-based selection."""
-    if n < 30 or scenario not in SCENARIOS:
-        raise ValueError('Use n >= 30 and a documented scenario.')
-    rng = np.random.default_rng(seed)
-    truth = rng.normal(size=n)
-    age = rng.normal(size=n)
-    duration = .2 * age + np.sqrt(.96) * rng.normal(size=n)
-    features = {}
-    for (domain, count), loading in zip(DOMAINS.items(), [.8, .6, .35]):
-        axis = loading * truth + np.sqrt(1-loading**2) * rng.normal(size=n)
-        local = rng.normal(size=n)
-        features[domain] = np.column_stack([
-            .8 * axis + .3 * (-1)**j * local + .5 * rng.normal(size=n)
-            for j in range(count)
-        ])
-    clinical = np.column_stack([age, duration,
-        .45*truth+rng.normal(size=n), .25*truth+rng.normal(size=n),
-        -.35*truth+rng.normal(size=n)])
-    clinical = StandardScaler().fit_transform(clinical)
-    probability = ndtr(-.3 + SCENARIOS[scenario]*truth + .2*age + .1*duration)
-    y = rng.binomial(1, probability)
-    return dict(ids=np.array([f'SYNTHETIC_{i:04d}' for i in range(n)]),
-                truth=truth, features=features, covariates=clinical, y=y,
-                generating_probability=probability)
+DISCLAIMER = 'EXPLORATORY MODEL SUMMARIES - NOT VALIDATED TREATMENT EFFECTS'
 
 
 def domain_pca(features):
@@ -214,16 +186,17 @@ def diagnostic_row(trace, label):
                 divergences=int(trace.sample_stats.diverging.sum()))
 
 
-def run(scenario='gradual', n=269, seed=20261012, smoke=False, output=None):
-    """Run one declared scenario once; return summaries without selection."""
+def run(input_csv, seed=20261012, smoke=False, output=None):
+    """Validate an external participant table, then run all declared models."""
+    data = load_participant_table(input_csv)
     import arviz as az
     import matplotlib.pyplot as plt
+    n = len(data['y'])
     root = Path(__file__).resolve().parents[1]
-    output = Path(output or tempfile.mkdtemp(prefix='LatentGait_SYNTHETIC_')).resolve()
+    output = Path(output or tempfile.mkdtemp(prefix='LatentGait_review_')).resolve()
     if output == root or root in output.parents:
         raise ValueError('Generated outputs must be outside the repository.')
     output.mkdir(parents=True, exist_ok=True)
-    data = generate_data(n, seed, scenario)
     scores, variance = domain_pca(data['features'])
     variance.to_csv(output/'pca_variance.csv', index=False)
     options = sample_options(smoke, seed)
@@ -237,7 +210,7 @@ def run(scenario='gradual', n=269, seed=20261012, smoke=False, output=None):
                  dict(strategy='kinematics_pc1',correlation=float(np.corrcoef(means,scores['kinematics'][:,0])[0,1]))]
     latent=relaxed.posterior.latent.values.reshape(-1,n)
     scale=latent.mean(axis=0).std(ddof=0)
-    pd.DataFrame(dict(synthetic_id=data['ids'],posterior_mean=means,
+    pd.DataFrame(dict(analysis_row=np.arange(1,n+1),posterior_mean=means,
                      posterior_sd=latent.std(axis=0)/scale)).to_csv(output/'latent_scores.csv',index=False)
     loadings=relaxed.posterior.other_loadings.values.reshape(-1,len(labels)-1)
     loading_rows=[dict(indicator=labels[0],mean=1.,lower=1.,upper=1.,fixed=True)]
@@ -330,8 +303,8 @@ def run(scenario='gradual', n=269, seed=20261012, smoke=False, output=None):
             ppc.append(dict(model=name,group=int(group),n=int(idx.sum()),observed=float(data['y'][idx].mean()),
                 replicated_mean=float(prevalence.mean()),lower=float(np.quantile(prevalence,.025)),upper=float(np.quantile(prevalence,.975))))
     for ax,title in zip(axes,['Conditional fall probability','dP/ds','Shift contrast (percentage points)']):
-        ax.set(title=title,xlabel='Synthetic latent instability (SD)');ax.legend()
-    fig.suptitle(DISCLAIMER);fig.tight_layout();fig.savefig(output/'synthetic_curves.pdf');plt.close(fig)
+        ax.set(title=title,xlabel='Latent instability (SD)');ax.legend()
+    fig.suptitle(DISCLAIMER);fig.tight_layout();fig.savefig(output/'probability_curves.pdf');plt.close(fig)
     (output/'regions.json').write_text(json.dumps(regions,indent=2))
     pd.DataFrame(curve_rows).to_csv(output/'probability_curves.csv',index=False)
     pd.DataFrame(contrast_rows).to_csv(output/'shift_contrasts.csv',index=False)
@@ -339,9 +312,12 @@ def run(scenario='gradual', n=269, seed=20261012, smoke=False, output=None):
     pd.DataFrame(construct).to_csv(output/'construct_sensitivity.csv',index=False)
     pd.DataFrame(associations).to_csv(output/'associations.csv',index=False)
     pd.DataFrame(diagnostics).to_csv(output/'sampling_diagnostics.csv',index=False)
-    report=dict(disclaimer=DISCLAIMER,scenario=scenario,n=n,fallers=int(data['y'].sum()),seed=seed,
+    report=dict(disclaimer=DISCLAIMER,n=n,fallers=int(data['y'].sum()),seed=seed,
+         input_sha256=data['input_sha256'], input_mode='external_csv',
+         data_origin='user_supplied_not_independently_verified',
+         preprocessing='locked complete participant table; feature and covariate standardization ddof=0; no imputation or aggregation',
          smoke=smoke,measurement_labels=labels,
-         clinical_data_read=False,whole_pipeline_validation=False,
+         external_data_read=True,whole_pipeline_validation=False,
          software_versions={package:version(package) for package in ['numpy','scipy','pandas','pymc','arviz','scikit-learn']},
          diagnostic_gate='not smoke; R-hat <=1.01; bulk ESS >=400; zero divergences; no PSIS warning',
          region_definition='70/80/90% of draw-specific positive maximum derivative within central 95% score support',
@@ -353,8 +329,8 @@ def run(scenario='gradual', n=269, seed=20261012, smoke=False, output=None):
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--scenario',choices=SCENARIOS,default='gradual')
-    parser.add_argument('--n',type=int,default=269)
+    parser.add_argument('--input-csv',type=Path,required=True,
+                        help='External CSV with one unique participant ID per row; no fallback.')
     parser.add_argument('--seed',type=int,default=20261012)
     parser.add_argument('--smoke',action='store_true')
     parser.add_argument('--output',type=Path)

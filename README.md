@@ -45,20 +45,22 @@ notebooks/
 ├── 06_threshold_hypothetical_contrasts.ipynb
 ├── 08_model_form_sensitivity.ipynb
 ├── 09_pca_component_sensitivity.ipynb
-└── 10_post_second_round_review_simulation.ipynb
+└── 10_post_second_round_review_additional_analyses.ipynb
 
 scripts/
 ├── 07_sensitivity_covariate_adjustment_bayesian.py
 ├── 08_pca_domain_axes_summary.py
 └── check_code_only.py
 
-simulation/
+review_analysis/
 ├── README.md
 ├── __init__.py
-└── pipeline.py
+├── inputs.py
+├── pipeline.py
+└── plot_results.R
 
 tests/
-└── test_simulation.py
+└── test_review_analysis.py
 ```
 
 ---
@@ -121,14 +123,19 @@ Generates supplementary PCA summaries for the trunk biomechanical domains, inclu
 
 ---
 
-## Post second-round review: methodological analyses
+## Post second-round review: additional analyses
 
-The `simulation/` folder and notebook 10 are separate from the clinical analyses.
-They generate independent synthetic individuals (default N=269), fit measurement,
-association and functional-form models, and evaluate model-defined derivative
-regions. They do not relabel clinical records or reproduce empirical manuscript
-estimates. See
-[simulation/README.md](simulation/README.md) for commands, assumptions and limits.
+The `review_analysis/` folder and notebook 10 require a user-supplied external
+participant table. They implement measurement, association and functional-form
+comparisons, component sensitivity and model-defined derivative regions. There
+is no input-data generator or automatic fallback; missing measurements or
+repeated IDs cause an error. Sample size is determined from the supplied table.
+
+Code availability is not evidence of execution or of any specific result. This
+new entry point uses complete participant-level features; its preprocessing and
+model assumptions must be reconciled with older analyses before combining their
+outputs. See [review_analysis/README.md](review_analysis/README.md) for the input
+schema, commands, validation status and limitations.
 
 Notebook 08 compares functional forms on clinical data; notebook 09 examines
 component retention. Their source code is retained. The existing scripts 07 and
@@ -139,7 +146,7 @@ generation are distinct tasks, not redundant replacements for those notebooks.
 
 Generated figures, tables, datasets and model outputs are not part of the current
 tracked tree. Existing local figures can remain in the ignored `figures/` folder.
-Older Git commits may still contain previously published figures. Synthetic-run
+Older Git commits may still contain previously published figures. Additional-analysis
 outputs must be saved outside this repository.
 
 Before committing, run:
@@ -160,7 +167,8 @@ The clinical and wearable datasets used in the manuscript are not distributed in
 
 This repository provides analytical code. To reproduce the clinical analysis,
 users must supply an authorized dataset with the analytical structure required
-by the clinical notebooks and scripts. Synthetic experiments need no clinical data.
+by the clinical notebooks and scripts. No dataset is bundled with the additional
+analysis module.
 
 ---
 

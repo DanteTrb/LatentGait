@@ -1,5 +1,5 @@
-# Plot computed synthetic results only. Never uses clinical figure data.
-# Usage: Rscript simulation/plot_synthetic.R /absolute/external/run-directory
+# Plot newly computed additional analyses; no pre-existing curve data are loaded.
+# Usage: Rscript review_analysis/plot_results.R /absolute/external/run-directory
 suppressPackageStartupMessages(library(ggplot2))
 suppressPackageStartupMessages(library(patchwork))
 args <- commandArgs(trailingOnly=TRUE)
@@ -9,14 +9,17 @@ script <- sub('^--file=', '', grep('^--file=', commandArgs(), value=TRUE)[1])
 root <- normalizePath(file.path(dirname(script), '..'))
 if (out == root || startsWith(out, paste0(root, '/'))) stop('Output must be outside repository.')
 read <- function(name) read.csv(file.path(out, paste0(name, '.csv')))
-banner <- 'SYNTHETIC ONLY | NOT CLINICAL RESULTS | NO TREATMENT EFFECTS'
+provenance <- paste(readLines(file.path(out,'provenance.json'),warn=FALSE),collapse=' ')
+if (!grepl('"input_mode": "external_csv"',provenance,fixed=TRUE)) stop('Expected external-data run provenance.')
+smoke <- grepl('"smoke": true',provenance,fixed=TRUE)
+banner <- if (smoke) 'EXECUTION TEST ONLY | NOT FOR INFERENCE' else 'POST SECOND-ROUND REVIEW | EXPLORATORY ANALYSIS'
 base <- theme_classic(base_size=11) + theme(plot.title=element_text(face='bold'), legend.position='bottom')
 theme_set(base)
 palette <- c(fixed='#556B86', free='#008A91', spline='#C66B36')
 save_plot <- function(plot,name,w=10,h=7) {
   plot <- plot + plot_annotation(title=banner,
-      caption='Computed synthetic run. Inspect provenance and convergence diagnostics before interpretation.')
-  ggsave(file.path(out,paste0(name,'_SYNTHETIC.pdf')),plot,width=w,height=h)
+      caption='Model-derived summaries; inspect provenance and diagnostics. No treatment effect is established.')
+  ggsave(file.path(out,paste0(name,'_review.pdf')),plot,width=w,height=h)
 }
 loading <- read('measurement_loadings')
 loading <- loading[tolower(as.character(loading$fixed)) == 'false', ] # Unit anchor is fixed.
@@ -31,7 +34,7 @@ c <- ggplot(scores,aes(posterior_sd)) + geom_histogram(aes(y=after_stat(density)
 save_plot(a/(b+c),'Figure1')
 assoc <- read('association_curve')
 f2 <- ggplot(assoc,aes(score,mean)) + geom_ribbon(aes(ymin=lower,ymax=upper),fill='#9DB6CB',alpha=.35) +
-  geom_line(linewidth=1) + labs(x='Latent instability (SD)',y='Synthetic fall probability',title='Logistic association; covariates at centered means')
+  geom_line(linewidth=1) + labs(x='Latent instability (SD)',y='Retrospective fall probability',title='Logistic association; covariates at centered means')
 save_plot(f2,'Figure2',8,5)
 curves <- read('probability_curves')
 contrasts <- read('shift_contrasts')
@@ -48,4 +51,4 @@ save_plot(a/(b+c),'Figure3')
 s2 <- ggplot(contrasts,aes(score,mean,color=factor(shift)))+geom_line()+facet_wrap(~model)+
   labs(x='Latent instability (SD)',y='Model-implied contrast (percentage points)',color='Shift (SD)')
 save_plot(s2,'Shift_comparison',11,5)
-cat('Synthetic figures saved outside repository:',out,'\n')
+cat('Figures saved outside repository:',out,'\n')
