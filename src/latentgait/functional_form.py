@@ -1,50 +1,62 @@
-"""Outcome-model functional-form sensitivity: fixed/free probit, RCS, PSIS-LOO."""
-from __future__ import annotations
+"""Restricted cubic spline and descriptive derivative geometry (Supplementary S5)."""
+
 import numpy as np
-import arviz as az
-import pymc as pm
-import pytensor.tensor as pt
-from patsy import dmatrix
-from .models import sampling_kwargs
 
-def rcs_basis(z: np.ndarray, knots: np.ndarray) -> np.ndarray:
-    """Linear + two restricted-cubic terms, evaluated numerically for scaling/tests."""
-    x=np.asarray(z); k1,k2,k3,k4=np.asarray(knots)
-    plus=lambda a: np.maximum(a, 0)**3
-    tail=plus(x-k1)-plus(x-k4)
-    h=lambda kj: (plus(x-kj)-plus(x-k4))/(k4-k1)-((k4-kj)/(k4-k1)**2)*tail
-    return np.column_stack([x, h(k2), h(k3)])
 
-def _rcs_tensor(z, knots, center, scale):
-    """Same basis evaluated at sampled latent scores, retaining measurement error."""
-    k1,k2,k3,k4=np.asarray(knots)
-    plus=lambda a: pt.maximum(a, 0)**3
-    tail=plus(z-k1)-plus(z-k4)
-    h=lambda kj: (plus(z-kj)-plus(z-k4))/(k4-k1)-((k4-kj)/(k4-k1)**2)*tail
-    return (pt.stack([z, h(k2), h(k3)], axis=1)-center)/scale
+def rcs_basis(x, knots):
+    """Harrell-type linear + K-2 nonlinear terms; linear tails beyond outer knots."""
+    x, knots = np.asarray(x, float), np.asarray(knots, float)
+    if knots.shape != (4,) or not np.all(np.diff(knots) > 0):
+        raise ValueError("Four distinct increasing knots are required")
+    a, b = knots[-2:]
+    plus = lambda u: np.maximum(u, 0) ** 3
+    terms = [x]
+    for t in knots[:-2]:
+        terms.append(
+            (plus(x - t) - plus(x - a) * (b - t) / (b - a) + plus(x - b) * (a - t) / (b - a)) / (b - knots[0]) ** 2
+        )
+    return np.stack(terms, axis=-1)
 
-def fit_probit_form(form: str, z_mean, z_sd, y, age_z, duration_z, *, seed=42):
-    """Fit one prespecified form; knots derive from predictor summaries, never outcome."""
-    z_mean=np.asarray(z_mean); z_sd=np.maximum(np.asarray(z_sd), 1e-6); y=np.asarray(y)
-    knots=np.quantile(z_mean, [.05,.35,.65,.95])
-    with pm.Model(coords={"subject": np.arange(len(y))}) as model:
-        z=pm.Normal("z_true", z_mean, z_sd, dims="subject")
-        intercept=pm.Normal("intercept", 0, 1.5)
-        ba=pm.Normal("beta_age", 0, 1); bd=pm.Normal("beta_duration", 0, 1)
-        if form == "fixed": eta=z-pm.Normal("tau", 0, 1.5)
-        elif form == "free": eta=intercept + pm.Normal("beta_z", 0, 1)*z
-        elif form == "spline":
-            B0=rcs_basis(z_mean, knots); center=B0.mean(0); scale=B0.std(0)
-            B=_rcs_tensor(z, knots, center, scale)
-            beta=pm.Normal("beta_spline", 0, [1,.75,.75], shape=3)
-            eta=intercept + pm.math.dot(B, beta)
-        else: raise ValueError("form must be fixed, free, or spline")
-        p=pm.math.invprobit(eta+ba*np.asarray(age_z)+bd*np.asarray(duration_z))
-        pm.Bernoulli("fall", p=p, observed=y, dims="subject")
-        idata=pm.sample(**sampling_kwargs(seed)); ppc=pm.sample_posterior_predictive(idata, random_seed=seed)
-    return idata, ppc, knots
 
-def compare_psis_loo(idatas: dict):
-    """Return LOO comparison/Pareto-k; refit any observation with k > .7 exactly."""
-    loos={name: az.loo(x, pointwise=True) for name,x in idatas.items()}
-    return az.compare(loos, ic="loo"), {k: np.asarray(v.pareto_k) for k,v in loos.items()}
+def rcs_tensor(x, knots, center, scale):
+    import pytensor.tensor as pt
+
+    a, b = knots[-2:]
+    plus = lambda u: pt.maximum(u, 0) ** 3
+    terms = [x]
+    for t in knots[:-2]:
+        terms.append(
+            (plus(x - t) - plus(x - a) * (b - t) / (b - a) + plus(x - b) * (a - t) / (b - a)) / (b - knots[0]) ** 2
+        )
+    return (pt.stack(terms, axis=-1) - center) / scale
+
+
+def derivative_region(grid, probability, fraction=0.8):
+    """Use derivative of posterior mean; retain disconnected sets and boundary flags."""
+    grid, p = np.asarray(grid), np.asarray(probability)
+    if grid.ndim != 1 or len(grid) < 3 or not np.all(np.diff(grid) > 0) or not 0 < fraction < 1:
+        raise ValueError("Invalid evaluation grid or region fraction")
+    d = np.gradient(p, grid, axis=-1, edge_order=2)
+    mean_d = d.mean(axis=0) if d.ndim == 2 else d
+    peak = mean_d.max()
+    if peak <= 1e-12:
+        return dict(peak_location=None, segments=[], boundary=False, derivative=mean_d)
+    ix = np.flatnonzero(mean_d >= fraction * peak)
+    groups = np.split(ix, np.where(np.diff(ix) > 1)[0] + 1)
+    return dict(
+        peak_location=float(grid[np.argmax(mean_d)]),
+        segments=[[float(grid[g[0]]), float(grid[g[-1]])] for g in groups if len(g)],
+        boundary=bool(ix[0] == 0 or ix[-1] == len(grid) - 1),
+        derivative=mean_d,
+    )
+
+
+def common_region(segment_sets):
+    """Intersect full connected-set representations without filling gaps."""
+    sets = list(segment_sets)
+    if not sets:
+        return []
+    result = sets[0]
+    for other in sets[1:]:
+        result = [[max(a, c), min(b, d)] for a, b in result for c, d in other if max(a, c) <= min(b, d)]
+    return result

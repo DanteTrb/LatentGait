@@ -25,6 +25,7 @@ def main():
                     for key in ('execution','ExecuteTime','collapsed','scrolled'):
                         cell.get('metadata',{}).pop(key,None)
         dirty |= bool(doc.get('metadata',{}).get('widgets'))
+        dirty |= any(bool(cell.get('attachments')) for cell in doc.get('cells', []))
         if args.strip:
             doc.get('metadata',{}).pop('widgets',None)
             if dirty:
@@ -34,8 +35,12 @@ def main():
     tracked=subprocess.check_output(['git','ls-files','-z'],cwd=ROOT).decode().split('\0')
     for name in filter(None,tracked):
         path=Path(name)
-        if path.parts[0] in ('figures','results','outputs') or path.suffix.lower() in ('.pdf','.png','.nc','.csv','.xlsx','.pkl'):
+        forbidden = ('.pdf', '.png', '.jpg', '.jpeg', '.nc', '.csv', '.tsv', '.xls', '.xlsx', '.pkl',
+                     '.pickle', '.npy', '.npz', '.parquet', '.feather', '.rds', '.rdata', '.log', '.docx', '.zip')
+        if path.parts[0] in ('figures','results','outputs','artifacts') or path.suffix.lower() in forbidden:
             errors.append(name+': tracked generated/binary artifact')
+        if path.parts[0] == 'data' and name != 'data/README.md':
+            errors.append(name+': participant-data directory is documentation-only')
     if errors:
         raise SystemExit('\n'.join(errors))
     print('PASS: notebook outputs empty; no tracked generated artifacts.')

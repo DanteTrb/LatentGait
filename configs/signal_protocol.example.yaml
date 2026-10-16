@@ -1,0 +1,23 @@
+# Mandatory local choices for optional raw-signal extraction; none are inferred from outcomes.
+# The analysis command accepts an already validated FEATURE TABLE, so this stage is independent.
+sampling_hz: 100
+boundaries: externally_verified_full_stride_sample_indices
+axis_mapping_reference: null
+bts_export_version_and_units: null
+rbf:
+  kernel: null       # S1a says RBF but does not identify kernel
+  smoothing: null
+  neighbors: null    # null denotes global interpolation ONLY after explicit protocol review
+  epsilon: null     # may remain null for kernels that do not need epsilon
+rqa:
+  ami_bins: null      # integer 4..19; no bin-combination rule is specified in the source
+  rtol: null          # 15..19
+  atol: null          # 2.0..4.0
+  radius_fraction: null # 0.05..0.20 of maximum Euclidean phase-space distance
+  lmin: null          # minimum diagonal line length; source formula leaves this unspecified
+  theiler: null       # temporal exclusion width; 0 excludes the main diagonal only
+event_qc:
+  fir_numtaps: null
+  fir_window: null
+# event_candidates returns a QC aid; use verified same-foot full-stride boundaries.
+# Extracted values must be validated against the authors' signal pipeline before exact-replay claims.

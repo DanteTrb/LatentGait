@@ -1,6 +1,3 @@
-"""LatentGait: analysis code only; it ships no participant data or results."""
+"""Computational companion to the final LatentGait manuscript and S1–S8."""
 
-from .cohort import lock_subject_cohort
-from .pca import fit_domain_pcas
-
-__all__ = ["lock_subject_cohort", "fit_domain_pcas"]
+__version__ = "0.3.0"

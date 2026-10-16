@@ -4,14 +4,30 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "latentgait"
-version = "0.2.0"
-description = "Privacy-preserving replication workflow for latent gait-instability analyses"
-requires-python = ">=3.10"
-dependencies = ["numpy", "pandas", "scipy", "scikit-learn", "pymc>=5", "arviz", "pytensor", "pyyaml", "patsy"]
+version = "0.3.0"
+description = "Computational companion for the final LatentGait manuscript and Supplementary S1-S8"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+  "numpy==2.2.6", "pandas==2.3.3", "scipy==1.15.2", "scikit-learn==1.7.2",
+  "pymc==5.25.1", "arviz==0.23.4", "pytensor==2.31.7", "xarray>=2024.1,<2026",
+  "statsmodels==0.14.5", "PyYAML==6.0.3", "PyWavelets>=1.6,<2", "matplotlib>=3.9,<4"
+]
 
 [project.optional-dependencies]
-dev = ["pytest", "ruff"]
+dev = ["pytest>=8,<9", "ruff>=0.12,<1"]
+
+[project.scripts]
+latentgait = "latentgait.workflow:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["F"]

@@ -1,11 +1,21 @@
-name: Code-only notebook hygiene
+name: Replication software verification
 on: [push, pull_request]
 jobs:
-  notebook-hygiene:
+  verification:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+          cache: pip
+      - run: python -m pip install -c constraints-tested-py310.txt -e '.[dev]'
+      - run: ruff check src tests
+      - run: python -m pytest
       - run: python scripts/check_code_only.py
+      - name: Execute all stages on generated software data
+        run: latentgait synthetic-check --output "${{ runner.temp }}/latentgait-synthetic-check" --figures
+      - name: Confirm no outputs entered the checkout
+        run: |
+          python scripts/check_code_only.py
+          test -z "$(git status --porcelain --untracked-files=normal)"

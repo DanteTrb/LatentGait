@@ -1,21 +1,21 @@
-# Copy outside version control and replace paths; do not commit data, IDs, logs, draws, or outputs.
-input_table: /absolute/path/to/authorised_subject_level_table.csv
-id_column: participant_id
-fall_column: fall_last_year_binary
-expected_unique_subjects: 269
-expected_fallers: 105
-expected_nonfallers: 164
+# Copy OUTSIDE the checkout, resolve the nulls and document author decisions before running.
+protocol_version: 1
 seed: 42
-domains:
-  rhythmicity_recurrence:
-    features: [hr_v, hr_ml, hr_ap, ihr_v, ihr_ml, ihr_ap, det_v, det_ml, det_ap]
-    directions: [1, 1, 1, 1, 1, 1, 1, 1, 1] # replace with preregistered impairment directions
-  neuromotor_complexity:
-    features: [mse_v, mse_ml, mse_ap]
-    directions: [1, 1, 1]
-  lower_trunk_kinematics:
-    features: [pelvis_tilt_range, pelvis_obliquity_range, pelvis_rotation_range]
-    directions: [1, 1, 1] # BTS-export definitions/version must be documented
+qc_protocol_reference: null  # reference to a locally approved eligibility/trial-selection protocol
+orientation:
+  # Ordered as in docs/INPUT_SCHEMA.md; no signs may be selected using fall outcomes.
+  kinematics: [1, 1, 1] # positive projection on increased pelvic excursions
+  rhythmicity: null    # nine +/-1 directions; final text does not uniquely identify them
+  complexity: null    # three +/-1 directions; final text does not uniquely identify them
+orientation_rationale: null # rationale/source for directions, fixed before outcome fitting
+measurement:
+  # Source: original b3ecf65 notebook 05 cell 5, NOT fully specified in the final DOCX.
+  anchor_sd: 0.1       # residual STANDARD DEVIATION; variance is 0.01
+  loading_prior_sd: 1.0
+  residual_prior_sd: 0.5
+  acknowledge_archived_priors: false
+# Final S2 does not say whether to refit the scaler in each bootstrap.
+bootstrap_scaling: null # refit or fixed; 500 participant resamples in production
+# Final S6 does not define the endpoints of the cumulative 90% interval.
+cumulative_rule: null # lower_tail_90 (minimum to 90%) or central_90 (5% to 95%)
 sampling: {chains: 4, warmup: 3000, draws: 3000, target_accept: 0.95}
-# TODO: define record-level eligibility, approved missing-data handling, PCA sign directions,
-# BTS export map/version, iHR phase convention, RQA selected parameters, and MSE validation.

@@ -1,0 +1,31 @@
+# Final manuscript and S1–S8 implementation map
+
+The final supplement is organized S1 feature processing, S2 PCA, S3 measurement, S4 logistic association, S5 functional form, S6 contrasts, S7 PPC, S8 speed. Historical section/table labels from older supplements are not used as the specification.
+
+| Document target | Implementation | Private generated summary | Verification / boundary |
+| --- | --- | --- | --- |
+| Main Table 1, S1 descriptive tables | reporting.descriptive_tables | descriptive_table1_s1.csv; descriptive_smd.csv | Mean/SD, median/IQR, counts/%; descriptive SMD convention documented below; no fitted study values in code |
+| S1/S1a HR and iHR | features.harmonic_features | Optional private custom-feature table | Synthetic parity/power reference check; 100 Hz, 20-Hz fourth-order zero-phase Butterworth, stride-wise 20 harmonics, then average |
+| S1/S1a %DET | features.ami_delay, fnn_dimension, percent_determinism | Optional private feature table | AMI/FNN/radius ranges enforced; selected settings and lmin/Theiler are mandatory local choices |
+| S1/S1a MSE | features.multiscale_entropy, sample_entropy | Optional private feature table | Central 20 strides, RBF 2,000 points, normalization, scale 4, m=2, lag 1, r=.1; independent brute-force match test |
+| S1 pelvis and spatiotemporals | Explicit BTS import schema | No substitute vendor algorithm | Vendor version/units/definitions must be supplied |
+| S2 Table S2 | pca.fit_domain_pcas | pca_loadings, pca_variance, pca_bootstrap, pca_scaling | Separate 9/3/3 PCAs, no rotation, 500 participant resamples; scaler convention explicitly selected |
+| S2 Table S3 | Full domain PCA results | pca_loadings.csv; pca_variance.csv | All rhythmicity PCs computed; first five can be selected for Table S3 |
+| S2 Table S4 | pca.indicator_matrix + four measurement/logistic fits | component_stability.csv; logistic_associations.csv | PC1-only; complexity PC2; all PC2; >=80%; same locked rows and anchor |
+| S2 Table S5 | Incremental complexity-PC2 logistic model | logistic_associations.csv; paired_loo_comparisons.csv | PC2 standardized; primary latent estimate reused; normal score error and primary covariates |
+| S3 Table S6 | models.build_measurement | measurement_*_parameters.csv | Anchor loading fixed 1; archived SD .1; non-anchor loading/residual SD and residual variance separately labelled |
+| S3 Table S7 | models.score_summary | latent_distribution_summaries.json; latent_scaling.json | Aggregate posterior-mean/SD distributions; identical scale conversion for means and uncertainty |
+| S3a sampling | models.Sampling | provenance.json; sampling_diagnostics.json | Production 4 x 3000/3000, target .95; short checks explicitly synthetic |
+| S4 Table S8 | Primary logistic model | logistic_associations.csv; primary_logistic_curve.csv | Normal priors, age/duration adjustment, OR per SD, 95% HDI, directional posterior probability |
+| S4 Table S9 | Four single-addition + expanded logistic fits | logistic_associations.csv; coefficient_terms.json | UPDRS-III/H&Y/LEDD/speed separately, expanded excludes H&Y as specified |
+| S5 Table S10 | Unadjusted fixed/free/spline + derivative_region | *_probability_curve.csv; derivative_regions.json; spline_design.json | Correct fixed/free priors, positive free slope, four empirical knots, hierarchical spline curvature, 1,000-point observed-range grid |
+| S5 Table S11 | diagnostics.outcome_loo, paired_elpd | paired_loo_comparisons.csv; loo_diagnostics.json | Same rows, integrated held-out score, pointwise paired SE, flagged exact outcome refits |
+| S6 Table S12 | reporting.contrasts | hypothetical_contrast_curves.csv; hypothetical_contrast_maxima.csv | .1/.2/.3/.5 shifts; 95% equal-tailed pointwise intervals at posterior-mean-selected maximum; no interval-for-location claim |
+| S6 Figure S1 / subject contrasts | reporting.contrasts | aggregate_subject_contrasts.json | Paired Z/tau draws, aggregate cohort-mean interval, between-subject descriptive SD, explicit cumulative-endpoint rule; individual rows never exported by analysis |
+| S7 reference PPC | diagnostics.ppc_prevalence | posterior_predictive_checks.json | Replicated Bernoulli prevalence; 95% predictive interval; no external-calibration claim |
+| S7 diagnostics and measurement adequacy | diagnostics.sampling_diagnostics; reporting.measurement_ppc | sampling_diagnostics.json; posterior_predictive_checks.json | Rank R-hat, bulk/tail ESS, divergences, BFMI, marginal indicator mean/SD checks |
+| S8 descriptive speed | reporting.gait_speed_model | descriptive_gait_speed_ols.csv; gait_speed_diagnostics.json | Log speed, mean-centered age/duration, OLS; continuous-outcome comparison remains descriptive |
+
+SMDs are descriptive faller-minus-nonfaller differences divided by sqrt((SD_faller^2+SD_nonfaller^2)/2); binary sex uses the analogous pooled Bernoulli variance. This convention is explicit because the manuscript table does not specify its denominator. Degenerate denominators remain missing rather than being fabricated.
+
+`run --figures` also generates private plots from the live fitted distributions: measurement score/uncertainty distributions, primary adjusted-logistic probability, functional-form/derivative/contrast panels, and the cumulative subject-contrast distribution. These plots are generated from the run, not a graphical replica of manuscript artwork or a claim of numerical agreement. No graph is drawn from stored paper results. The source's conceptual workflow figure does not require fitted data and is described in the README. All plots remain outside Git.
