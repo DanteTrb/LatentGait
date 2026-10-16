@@ -12,12 +12,12 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from .cohort import COVARIATES, DOMAINS, link_tables, load_cohort, validate_frame, zscore
+from .cohort import COVARIATES, link_tables, load_cohort, validate_frame, zscore
 from .diagnostics import outcome_loo, paired_elpd, ppc_prevalence, sampling_diagnostics
 from .functional_form import common_region
 from .models import Sampling, build_measurement, build_outcome, sample, score_summary, spline_spec
 from .models import prior_probability_curves
-from .pca import fit_domain_pcas, indicator_matrix
+from .pca import fit_domain_pcas, indicator_matrix, validate_orientation
 from .reporting import (
     coefficient_summary,
     contrasts,
@@ -57,12 +57,9 @@ def write_json(path, value):
 
 
 def validate_protocol(cfg):
-    if cfg.get("protocol_version") != 2:
-        raise ValueError("Unsupported protocol version")
-    for name, cols in DOMAINS.items():
-        direction = cfg["orientation"][name]
-        if direction is None or len(direction) != len(cols) or not np.isin(direction, [-1, 1]).all():
-            raise ValueError(f"Resolve and record the {name} PCA orientation before analysis")
+    if cfg.get("protocol_version") != 3:
+        raise ValueError("Unsupported protocol version; use the version-3 example with fixed PCA orientation")
+    validate_orientation(cfg.get("orientation"))
     if not cfg.get("orientation_rationale") or not cfg.get("qc_protocol_reference"):
         raise ValueError("Record orientation rationale and local QC protocol reference")
     measurement = cfg["measurement"]

@@ -4,7 +4,8 @@ The package is ready to execute the agreed protocol. No participant analysis was
 
 | Item | Status and required manuscript check |
 | --- | --- |
-| Cohort and primary model family | 269 unique participants, 105/164; one trial each; reported primary adjustment/prior structure retained. Confirm the custodian's QC/orientation inputs before execution. |
+| Cohort and primary model family | 269 unique participants, 105/164; one trial each; reported primary adjustment/prior structure retained. Confirm the custodian's QC inputs before execution. |
+| PCA orientation | Protocol 3 fixes positive-excursion kinematics PC1 and largest-absolute-loading-positive rhythmicity/complexity PC1, with schema-order ties. The latter rule was available in historical notebook 09; its historical execution is not certified. Non-anchor PC/loading signs may reverse in displayed tables without changing the current symmetric-prior latent model. Keep labels/loadings consistent; do not reinterpret the sign convention as a clinical impairment direction. |
 | Bootstrap | Historical code confirms refitted scaling and percentile intervals. Common resamples and explicit sign alignment are adopted refinements. Verify Table S2 after any rerun; identify the 5,000-resample check as added software/numerical sensitivity, if reported. |
 | Spline | Fixed basis/scaling/intercept and S5 prior hierarchy are documented. Verify any affected curve, derivative-region and LOO summaries rather than asserting numerical identity to an unspecified historical implementation. |
 | LOO | Marginalized conditional-outcome prediction target and flagged refits are explicit. Ensure ELPD descriptions match that target; no whole-pipeline or external validation claim. |

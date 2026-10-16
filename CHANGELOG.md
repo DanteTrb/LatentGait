@@ -1,5 +1,9 @@
 # Changes
 
+## 0.4.1
+
+Protocol version 3 fixes rhythmicity/complexity PC1 signs by a positive largest absolute loading, with exact ties resolved by feature-schema order. This convention was available in archived notebook 09; the executed historical branch is not asserted. The kinematics excursion anchor, higher-PC convention and bootstrap alignment to the full-sample PC1 are retained. Public configuration no longer has unresolved PCA direction vectors. Validation rejects outdated/alternative orientation configurations; tests cover ties, solver sign reversals, unchanged anchoring, outcome independence and non-anchor PC/loading recoding symmetry. No participant data, archived scores or other analytical changes are included.
+
 ## 0.4.0
 
 Final adopted analysis specification (protocol version 2): refitted standardization and common participant draws in the 500-resample PCA bootstrap; separate 5,000-resample endpoint/component-instability check; fixed Harrell spline basis and documented priors with prior-curve diagnostics; existing marginalized conditional-outcome PSIS-LOO with exact flagged refits retained; primary derivative of posterior mean probability with added 70%/90% and 2,000-grid checks; empirical weighted central-90% cumulative interval without KDE, plus lower-tail90 sensitivity. New checks and the cumulative convention are identified as adopted reconstruction choices, not asserted as historical study procedures. Odds-ratio reporting is restricted to logistic coefficients; probit/spline coefficients are labelled on their native scale. No cohort data/results are included.

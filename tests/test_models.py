@@ -100,6 +100,24 @@ class ModelTests(unittest.TestCase):
         observed = np.asarray(prior.prior_predictive.indicators)[..., 0]
         self.assertAlmostEqual(float((observed - latent).std()), 0.1, delta=0.01)
 
+    def test_nonanchor_sign_recoding_preserves_measurement_logdensity(self):
+        rng = np.random.default_rng(32601)
+        x = rng.normal(size=(12, 3))
+        labels = ["kinematics_PC1", "rhythmicity_PC1", "complexity_PC1"]
+        kwargs = dict(anchor_sd=0.1, loading_prior_sd=1.0, residual_prior_sd=0.5)
+        model = build_measurement(x, labels, **kwargs)
+        point = model.initial_point()
+        point["latent"] = rng.normal(size=12)
+        point["loading"] = np.array([0.4, -0.3])
+        reference = model.compile_logp()(point)
+        for signs in ([-1, 1], [1, -1], [-1, -1]):
+            recoded = x.copy()
+            recoded[:, 1:] *= signs
+            transformed = {key: value.copy() for key, value in point.items()}
+            transformed["loading"] *= signs
+            other = build_measurement(recoded, labels, **kwargs)
+            np.testing.assert_allclose(other.compile_logp()(transformed), reference, atol=1e-10, rtol=0)
+
     def test_measurement_sd_is_rescaled(self):
         import arviz as az
 

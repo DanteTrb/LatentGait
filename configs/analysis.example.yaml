@@ -1,13 +1,17 @@
-# Copy OUTSIDE the checkout, resolve the nulls and document author decisions before running.
-protocol_version: 2
+# Copy OUTSIDE the checkout; record the local QC reference and acknowledge the prior source.
+protocol_version: 3
 seed: 42
 qc_protocol_reference: null  # reference to a locally approved eligibility/trial-selection protocol
 orientation:
-  # Ordered as in docs/INPUT_SCHEMA.md; no signs may be selected using fall outcomes.
+  # Fixed outcome-independent conventions; feature/tie order is in docs/INPUT_SCHEMA.md.
   kinematics: [1, 1, 1] # positive projection on increased pelvic excursions
-  rhythmicity: null    # nine +/-1 directions; final text does not uniquely identify them
-  complexity: null    # three +/-1 directions; final text does not uniquely identify them
-orientation_rationale: null # rationale/source for directions, fixed before outcome fitting
+  rhythmicity: largest_absolute_loading_positive
+  complexity: largest_absolute_loading_positive
+orientation_rationale: >-
+  Preserve the positive-excursion kinematics anchor; orient rhythmicity/complexity PC1
+  by a positive largest absolute loading, breaking exact ties by schema order.
+  This deterministic convention was available in archived notebook 09; the historical
+  executed branch is not certified. No fall outcomes or saved participant scores are used.
 measurement:
   # Source: original b3ecf65 notebook 05 cell 5, NOT fully specified in the final DOCX.
   anchor_sd: 0.1       # residual STANDARD DEVIATION; variance is 0.01

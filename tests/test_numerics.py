@@ -1,6 +1,7 @@
 """Generated mathematical/software fixtures; no participant data or fitted paper values."""
 
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 from scipy.special import ndtr
@@ -18,7 +19,7 @@ from latentgait.features import (
     trim_boundaries,
 )
 from latentgait.functional_form import common_region, derivative_region, rcs_basis
-from latentgait.pca import fit_domain_pcas, indicator_matrix
+from latentgait.pca import LARGEST_LOADING_POSITIVE, _largest_loading_sign, fit_domain_pcas, indicator_matrix
 from latentgait.synthetic import synthetic_frame, synthetic_protocol
 from latentgait.workflow import external_path, validate_protocol
 
@@ -70,6 +71,35 @@ class CohortTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "orientation"):
             validate_protocol(cfg)
 
+    def test_final_orientation_cannot_be_overridden_or_silently_migrated(self):
+        for name, value in [
+            ("kinematics", [-1, -1, -1]),
+            ("rhythmicity", [1] * 9),
+            ("complexity", "outcome_selected"),
+        ]:
+            cfg = synthetic_protocol()
+            cfg["orientation"][name] = value
+            with self.assertRaisesRegex(ValueError, "orientation"):
+                validate_protocol(cfg)
+            with self.assertRaisesRegex(ValueError, "orientation"):
+                fit_domain_pcas(synthetic_frame(), cfg["orientation"], n_bootstrap=2)
+        cfg = synthetic_protocol()
+        cfg["protocol_version"] = 2
+        with self.assertRaisesRegex(ValueError, "version-3"):
+            validate_protocol(cfg)
+
+    def test_public_example_has_complete_pca_orientation(self):
+        import yaml
+        from latentgait.workflow import ROOT
+
+        cfg = yaml.safe_load((ROOT / "configs/analysis.example.yaml").read_text())
+        self.assertEqual(cfg["orientation"]["rhythmicity"], LARGEST_LOADING_POSITIVE)
+        self.assertEqual(cfg["orientation"]["complexity"], LARGEST_LOADING_POSITIVE)
+        self.assertTrue(cfg["orientation_rationale"])
+        cfg["qc_protocol_reference"] = "Generated software-test QC reference"
+        cfg["measurement"]["acknowledge_archived_priors"] = True
+        validate_protocol(cfg)
+
     def test_final_choices_are_fixed_in_protocol(self):
         for field, value in [("bootstrap_scaling", "fixed"), ("cumulative_rule", "lower_tail_90")]:
             cfg = synthetic_protocol()
@@ -94,6 +124,53 @@ class CohortTests(unittest.TestCase):
 
 
 class NumericalTests(unittest.TestCase):
+    def test_largest_loading_sign_breaks_exact_ties_by_schema_order(self):
+        for component, expected in [([-0.8, 0.8, 0.1], -1), ([0.8, -0.8, 0.1], 1), ([0.1, -0.9, 0.2], -1)]:
+            component = np.asarray(component)
+            self.assertEqual(_largest_loading_sign(component), expected)
+            np.testing.assert_array_equal(
+                component * _largest_loading_sign(component),
+                -component * _largest_loading_sign(-component),
+            )
+
+    def test_pca_orientation_preserves_anchor_and_canonical_nonanchor_loadings(self):
+        from sklearn.decomposition import PCA
+        from latentgait.cohort import DOMAINS
+
+        frame = synthetic_frame()
+        pca = fit_domain_pcas(frame, synthetic_protocol()["orientation"], n_bootstrap=6)
+        z = zscore(frame[DOMAINS["kinematics"]])[0]
+        component = PCA(svd_solver="full").fit(z).components_[0]
+        component *= np.sign(component @ np.ones(3))
+        np.testing.assert_allclose(pca.scores["kinematics"][:, 0], z @ component)
+        for (domain, number), rows in pca.loadings.groupby(["domain", "component"], sort=False):
+            values = rows.loading.to_numpy()
+            if domain == "kinematics" and number == 1:
+                self.assertGreater(values.sum(), 0)
+            else:
+                self.assertGreater(values[np.argmax(abs(values))], 0)
+
+    def test_pca_and_bootstrap_are_invariant_to_solver_sign_reversals(self):
+        from sklearn.decomposition import PCA
+
+        class ReversedPCA(PCA):
+            def fit(self, x, y=None):
+                super().fit(x, y)
+                self.components_ *= -1
+                return self
+
+        frame = synthetic_frame()
+        cfg = synthetic_protocol()
+        reference = fit_domain_pcas(frame, cfg["orientation"], n_bootstrap=6)
+        with patch("latentgait.pca.PCA", ReversedPCA):
+            reversed_fit = fit_domain_pcas(frame, cfg["orientation"], n_bootstrap=6)
+        for domain in reference.scores:
+            np.testing.assert_allclose(reference.scores[domain], reversed_fit.scores[domain])
+        np.testing.assert_allclose(reference.loadings.loading, reversed_fit.loadings.loading)
+        np.testing.assert_allclose(
+            reference.bootstrap[["mean", "lower", "upper"]], reversed_fit.bootstrap[["mean", "lower", "upper"]]
+        )
+
     def test_domains_share_draws_and_stability_extends_primary_draws(self):
         frame = synthetic_frame()
         from latentgait.cohort import DOMAINS
@@ -140,7 +217,8 @@ class NumericalTests(unittest.TestCase):
         p = fit_domain_pcas(f, cfg["orientation"], n_bootstrap=4)
         f.fall_last_year_binary = 1 - f.fall_last_year_binary
         q = fit_domain_pcas(f, cfg["orientation"], n_bootstrap=4)
-        np.testing.assert_allclose(p.scores["rhythmicity"], q.scores["rhythmicity"])
+        for domain in p.scores:
+            np.testing.assert_allclose(p.scores[domain], q.scores[domain])
 
     def test_standardized_measurement_sd_must_share_mean_scale(self):
         x = np.array([-3.0, 0.0, 3.0])

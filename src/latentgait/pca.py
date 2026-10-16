@@ -8,6 +8,25 @@ from sklearn.decomposition import PCA
 
 from .cohort import DOMAINS, zscore
 
+LARGEST_LOADING_POSITIVE = "largest_absolute_loading_positive"
+
+
+def validate_orientation(orientation):
+    """The final public convention is fixed without reference to fall outcomes."""
+    if not isinstance(orientation, dict) or set(orientation) != set(DOMAINS):
+        raise ValueError("PCA orientation must specify exactly kinematics, rhythmicity and complexity")
+    if not np.array_equal(np.asarray(orientation["kinematics"]), [1, 1, 1]):
+        raise ValueError("Kinematics PCA orientation must retain the [1, 1, 1] excursion anchor")
+    for name in ("rhythmicity", "complexity"):
+        if not isinstance(orientation[name], str) or orientation[name] != LARGEST_LOADING_POSITIVE:
+            raise ValueError(f"The {name} PCA orientation must be {LARGEST_LOADING_POSITIVE}")
+
+
+def _largest_loading_sign(component):
+    # np.argmax takes the first exact tie, in the fixed feature-schema order.
+    anchor = np.argmax(np.abs(component))
+    return 1.0 if component[anchor] >= 0 else -1.0
+
 
 @dataclass
 class DomainPCA:
@@ -20,7 +39,8 @@ class DomainPCA:
     component_diagnostics: pd.DataFrame
 
 
-def fit_domain_pcas(frame, directions, *, n_bootstrap=500, seed=42, bootstrap_scaling="refit", n_bootstrap_check=None):
+def fit_domain_pcas(frame, orientation, *, n_bootstrap=500, seed=42, bootstrap_scaling="refit", n_bootstrap_check=None):
+    validate_orientation(orientation)
     if bootstrap_scaling not in ("refit", "fixed") or n_bootstrap < 2:
         raise ValueError("Select refit/fixed bootstrap scaling and at least two resamples")
     rng = np.random.default_rng(seed)
@@ -32,20 +52,20 @@ def fit_domain_pcas(frame, directions, *, n_bootstrap=500, seed=42, bootstrap_sc
     scores, loading_rows, variance_rows, boot_rows, scaling = {}, [], [], [], []
     checks, diagnostics = [], []
     for name, columns in DOMAINS.items():
-        direction = np.asarray(directions[name], float)
-        if direction.shape != (len(columns),) or not np.isin(direction, [-1, 1]).all():
-            raise ValueError(f"A declared +/-1 direction for every {name} feature is required")
         raw = frame[columns].to_numpy(float)
         z, center, scale = zscore(raw)
         pca = PCA(svd_solver="full").fit(z)
         components = pca.components_.copy()
-        # A nonzero projection on the declared biomechanical direction identifies PC1 sign.
-        projection = components[0] @ direction
-        if abs(projection) < 1e-8:
-            raise ValueError(f"Ambiguous PC1 orientation in {name}; review the prespecified convention")
-        components[0] *= np.sign(projection)
+        if name == "kinematics":
+            # Preserve the identifying anchor: positive projection on pelvic excursions.
+            projection = components[0] @ np.asarray(orientation[name], float)
+            if abs(projection) < 1e-8:
+                raise ValueError("Ambiguous kinematics PC1 orientation; the excursion anchor cannot be identified")
+            components[0] *= np.sign(projection)
+        else:
+            components[0] *= _largest_loading_sign(components[0])
         for j in range(1, len(columns)):
-            components[j] *= np.sign(components[j, np.argmax(abs(components[j]))])
+            components[j] *= _largest_loading_sign(components[j])
         scores[name] = z @ components.T
         for c, m, s in zip(columns, center, scale):
             scaling.append(dict(feature=c, center=m, sd=s))

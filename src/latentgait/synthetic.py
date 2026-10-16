@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 
 from .cohort import COVARIATES, DOMAINS
+from .pca import LARGEST_LOADING_POSITIVE
 
 
 def synthetic_frame(n=40, seed=173):
@@ -51,10 +52,14 @@ def synthetic_frame(n=40, seed=173):
 
 def synthetic_protocol():
     return dict(
-        protocol_version=2,
+        protocol_version=3,
         seed=173,
-        orientation={name: [1] * len(cols) for name, cols in DOMAINS.items()},
-        orientation_rationale="Generated test convention only; no clinical interpretation",
+        orientation=dict(
+            kinematics=[1, 1, 1],
+            rhythmicity=LARGEST_LOADING_POSITIVE,
+            complexity=LARGEST_LOADING_POSITIVE,
+        ),
+        orientation_rationale="Fixed public sign convention on generated values; no clinical interpretation",
         qc_protocol_reference="Generated test QC assertions only",
         measurement=dict(anchor_sd=0.1, loading_prior_sd=1.0, residual_prior_sd=0.5, acknowledge_archived_priors=True),
         bootstrap_scaling="refit",

@@ -12,9 +12,25 @@ def check(root):
     assert meta["mode"] == "synthetic_execution_check"
     assert meta["status"] == "synthetic_check_complete_no_inference"
     assert meta["input_sha256"] == "generated_from_scratch"
-    assert meta["protocol"]["protocol_version"] == 2
+    assert meta["protocol"]["protocol_version"] == 3
+    assert meta["protocol"]["orientation"] == {
+        "kinematics": [1, 1, 1],
+        "rhythmicity": "largest_absolute_loading_positive",
+        "complexity": "largest_absolute_loading_positive",
+    }
     assert meta["protocol"]["bootstrap_scaling"] == "refit"
     assert meta["protocol"]["cumulative_rule"] == "central_90"
+    with (root / "pca_loadings.csv").open() as handle:
+        loading_rows = list(csv.DictReader(handle))
+    groups = {}
+    for row in loading_rows:
+        groups.setdefault((row["domain"], int(row["component"])), []).append(float(row["loading"]))
+    assert len(groups) == 15
+    for key, values in groups.items():
+        if key == ("kinematics", 1):
+            assert sum(values) > 0
+        else:
+            assert max(values, key=abs) > 0
     for name in ("fixed", "free", "spline"):
         with (root / f"{name}_parameters.csv").open() as handle:
             fields = csv.DictReader(handle).fieldnames

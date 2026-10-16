@@ -2,7 +2,7 @@
 
 Computational companion to *Latent gait instability underlying retrospective fall occurrence in Parkinson's disease* and its final Supplementary Sections S1–S8. One canonical command runs the analyses on an authorised local participant table. No participant data, identifiers, real-data samples, fitted cohort results, logs, posterior draws or generated figures are distributed.
 
-Version 0.4.0 implements all reported analysis stages under a fixed, explicitly adopted specification for bootstrap, spline, LOO and curve summaries. See [the final protocol and source audit](docs/PROTOCOL.md) for the distinction between documented study methods, recovered historical code and decisions adopted for this package. The local configuration still requires the data custodian's QC and PCA-orientation inputs. A successful synthetic check establishes software execution; agreement with the paper's cohort results requires a private authorised comparison.
+Version 0.4.1 implements all reported analysis stages under a fixed, explicitly adopted specification for PCA orientation, bootstrap, spline, LOO and curve summaries. See [the final protocol and source audit](docs/PROTOCOL.md) for the distinction between documented study methods, recovered historical code and decisions adopted for this package. PCA sign conventions are fully specified in the public configuration; the data custodian still supplies the local QC reference and acknowledges the archived measurement-prior source. A successful synthetic check establishes software execution; agreement with the paper's cohort results requires a private authorised comparison.
 
 ## Install
 
@@ -38,7 +38,7 @@ Both tables need matching `participant_id` **and** `trial_id`. The join rejects 
 
 ```sh
 cp configs/analysis.example.yaml /secure/location/analysis.yaml
-# Resolve every null field and acknowledge the documented source of measurement priors.
+# Record the local QC protocol reference and acknowledge the measurement-prior source.
 latentgait validate --config /secure/location/analysis.yaml \
   --input /secure/location/participants.csv
 latentgait run --config /secure/location/analysis.yaml \
@@ -52,7 +52,7 @@ The output directory must not already exist. The run records code revision, inpu
 
 The production run performs:
 
-1. Separate standardized PCA of the 9 rhythmicity/recurrence, 3 complexity and 3 pelvic indicators, declared outcome-independent PC1 orientation, and 500 participant bootstrap resamples. Every resample refits standardization/PCA; participant draws are common across domains and PC1 signs are aligned to the reference. A separate 5,000-resample check extends the primary sequence, with interval-endpoint changes and component-instability diagnostics reported explicitly.
+1. Separate standardized PCA of the 9 rhythmicity/recurrence, 3 complexity and 3 pelvic indicators, fixed outcome-independent PC1 orientation, and 500 participant bootstrap resamples. Kinematics PC1 retains positive projection on pelvic excursions; rhythmicity/complexity PC1 have their largest absolute loading positive, with exact ties resolved by schema order. This is a sign convention, not a claim that larger domain scores mean worse function. Every resample refits standardization/PCA; participant draws are common across domains and bootstrap PC1 signs are aligned to the full-sample reference, not independently reoriented. A separate 5,000-resample check extends the primary sequence, with interval-endpoint changes and component-instability diagnostics reported explicitly.
 2. The primary anchored latent measurement model and three component-retention alternatives: complexity PC2, PC2 in each domain, and >=80% within-domain variance. Scores are standardized consistently; their posterior SDs are divided by the same scale as their posterior means.
 3. Bayesian logistic association adjusted for age and disease duration; separate additions of UPDRS-III, H&Y, LEDD and gait speed; expanded adjustment; and an incremental complexity-PC2 model. Coefficients, 95% HDIs, ORs and directional probabilities are computed from posterior draws. ORs are exported only for logistic coefficients; probit/spline parameters retain their probit scale.
 4. The paper's **unadjusted** fixed-slope probit, positive free-slope probit and restricted cubic spline probit. All propagate the same normal latent-score uncertainty. The fixed model uses tau ~ Normal(0,1); the free model uses tau ~ Normal(0,1.5), log(slope) ~ Normal(0,0.5); the spline uses predictor-quantile knots, standardized basis terms and hierarchical nonlinear priors.
