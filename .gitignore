@@ -6,7 +6,7 @@ __pycache__
 data/raw/*
 data/processed/*
 !data/raw/.gitkeep
-!data/processed/.gitkeep
+!data/processed/.gitkeep.virtual_documents/
 
 # Jupyter temporary files
 .virtual_documents/
@@ -18,11 +18,15 @@ results/
 # Generated notebook outputs
 notebooks/*.csv
 notebooks/Fig_X_*
-
-# Code-only distribution: preserve artifacts locally, never publish them.
-figures/
-outputs/
-review_outputs/
-*.pdf
-*.png
-*.pkl
+data/raw/
+data/processed/
+results/
+artifacts/
+*.nc
+*.log
+*.xlsx
+*.csv
+!data/README.md
+!configs/*.example.yaml
+.pytest_cache/
+__pycache__/

@@ -1,0 +1,21 @@
+# Copy outside version control and replace paths; do not commit data, IDs, logs, draws, or outputs.
+input_table: /absolute/path/to/authorised_subject_level_table.csv
+id_column: participant_id
+fall_column: fall_last_year_binary
+expected_unique_subjects: 269
+expected_fallers: 105
+expected_nonfallers: 164
+seed: 42
+domains:
+  rhythmicity_recurrence:
+    features: [hr_v, hr_ml, hr_ap, ihr_v, ihr_ml, ihr_ap, det_v, det_ml, det_ap]
+    directions: [1, 1, 1, 1, 1, 1, 1, 1, 1] # replace with preregistered impairment directions
+  neuromotor_complexity:
+    features: [mse_v, mse_ml, mse_ap]
+    directions: [1, 1, 1]
+  lower_trunk_kinematics:
+    features: [pelvis_tilt_range, pelvis_obliquity_range, pelvis_rotation_range]
+    directions: [1, 1, 1] # BTS-export definitions/version must be documented
+sampling: {chains: 4, warmup: 3000, draws: 3000, target_accept: 0.95}
+# TODO: define record-level eligibility, approved missing-data handling, PCA sign directions,
+# BTS export map/version, iHR phase convention, RQA selected parameters, and MSE validation.

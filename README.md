@@ -1,213 +1,55 @@
 # LatentGait
 
-[![Python](https://img.shields.io/badge/python-3.10-blue)]()
-[![Bayesian Model](https://img.shields.io/badge/model-Bayesian-orange)]()
-[![Wearable Biomechanics](https://img.shields.io/badge/domain-wearable%20biomechanics-purple)]()
-[![License](https://img.shields.io/badge/license-MIT-green)]()
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18961895.svg)](https://doi.org/10.5281/zenodo.18961895)
+Privacy-preserving replication code for *Latent gait instability underlying retrospective fall occurrence in Parkinson's disease*. It is an analytical workflow, **not** a clinical prediction tool, causal analysis, or source of patient data. No participant records, identifiers, cohort-derived samples, posterior draws, logs, numerical results, or manuscript figures are included.
 
-Analytical code for:
+## Scope and cohort lock
 
-**Latent gait instability underlying retrospective fall occurrence in Parkinson’s disease**
+The final cohort is **269 unique participants**: 105 with and 164 without retrospective fall occurrence. The workflow rejects duplicate IDs and does not average or silently collapse repeated trials. Select one eligible, QC-passed trial per person upstream using a documented record-level protocol kept outside this repository.
 
-This repository contains the computational workflow supporting the revised manuscript. The analyses estimate a wearable-derived latent gait-instability construct from trunk biomechanics and examine its association with retrospective fall occurrence in Parkinson’s disease.
+Workflow: approved local source → record-level QC → subject-level lock → documented features → separate, oriented PCA within 9 rhythmicity–recurrence, 3 complexity, and 3 lower-trunk-kinematic inputs → 500-resample PC1 bootstrap → Bayesian measurement model → association/functional-form sensitivity. Fall outcome is never used to orient components or select features.
 
----
+## Install and run
 
-## Overview
-
-Falls in Parkinson’s disease are multifactorial and are not expected to be fully explained by any single gait metric. This project evaluates whether trunk-derived wearable gait features can be integrated into a latent biomechanical construct representing gait instability, and whether this construct is associated with retrospective fall occurrence.
-
-The workflow includes:
-
-1. definition of the analytical variables and conceptual roles;
-2. derivation of domain-specific trunk biomechanical axes;
-3. Bayesian latent-variable modeling of gait instability;
-4. comparison with gait speed as a conventional spatiotemporal descriptor;
-5. Bayesian modeling of retrospective fall occurrence;
-6. model-based threshold-region and hypothetical instability-reduction contrasts;
-7. peer-review sensitivity analyses for additional covariate adjustment;
-8. supplementary PCA summaries for domain-axis interpretation.
-
-The repository is intended to document the analytical workflow used for the manuscript, not to provide a deployed clinical prediction tool.
-
----
-
-## Repository Structure
-
-```text
-notebooks/
-├── 01_exposure_definition_and_conceptual_roles.ipynb
-├── 02_latent_trunk_axes.ipynb
-├── 03_spatiotemporal_latent gait instability.ipynb
-├── 04_contrast_gait_speed.ipynb
-├── 05_bayesian_latent_gait_instability_and_falls_occurrence.ipynb
-├── 06_threshold_hypothetical_contrasts.ipynb
-├── 08_model_form_sensitivity.ipynb
-├── 09_pca_component_sensitivity.ipynb
-└── 10_post_second_round_review_additional_analyses.ipynb
-
-scripts/
-├── 07_sensitivity_covariate_adjustment_bayesian.py
-├── 08_pca_domain_axes_summary.py
-└── check_code_only.py
-
-review_analysis/
-├── README.md
-├── __init__.py
-├── inputs.py
-├── pipeline.py
-└── plot_results.R
-
-tests/
-└── test_review_analysis.py
+```bash
+conda env create -f environment.yml
+conda activate latent-gait
+pip install -e '.[dev]'
+pytest
+cp configs/analysis.example.yaml /secure/location/analysis.yaml
+# edit only the secure copy; write generated artifacts outside this repository
+python -m latentgait.workflow --config /secure/location/analysis.yaml --output /secure/location/results
 ```
 
----
+Tests generate data from scratch. Never commit authorised data, IDs, intermediate tables, figures, console logs, NetCDF draws, or outputs.
 
-## Analytical Workflow
+## Input schema
 
-### 1. Conceptual and analytical variable definition
+The local CSV needs one QC-passed row per subject, a nonblank local identifier, binary `fall_last_year_binary`, and configured features. Names are configurable.
 
-`01_exposure_definition_and_conceptual_roles.ipynb`
+| Domain | Inputs | Analysis role |
+| --- | --- | --- |
+| Rhythmicity–recurrence | HR, iHR, %DET in V/ML/AP (9) | independent standardized PCA |
+| Neuromotor complexity | MSE in V/ML/AP (3) | independent standardized PCA |
+| Lower-trunk kinematics | pelvis tilt, obliquity, rotation ranges (3) | independent PCA; anchored indicator |
 
-Defines the analytical dataset structure, retrospective fall-occurrence outcome, candidate biomechanical descriptors, and the conceptual roles of clinical and gait variables used in the manuscript.
+Set PCA signs through a pre-outcome impairment-direction convention. The PCA routine returns PC1 variance, oriented loadings and 500-bootstrap percentile intervals without hard-coding a study result. Sensitivity analyses should add complexity PC2, all-domain PC2, and enough within-domain PCs for 80% variance, then compare scores and association estimates.
 
-### 2. Domain-specific trunk biomechanical axes
+## Signal-processing and vendor boundaries
 
-`02_latent_trunk_axes.ipynb`
+Supplementary S1 documents: at least 20 consecutive valid strides; removal of the initial/final two strides; vertical-acceleration events; 3.2-Hz FIR/wavelet event work; HR/iHR with demeaned, 20-Hz zero-lag fourth-order Butterworth filtering and 20 harmonics; %DET after 2,000-point RBF resampling and AMI/FNN/radius selection; and MSE after 2,000-point resampling, normalization, `m=2`, `tau=1`, `r=0.10 SD`, scale 4.
 
-Groups trunk-derived wearable features into biomechanical domains and derives domain-specific axes using principal component analysis.
+The manuscript leaves some selections as ranges or refers to an original custom routine. They are deliberate TODOs, not guessed defaults: iHR phase/intrinsic-harmonic convention; selected AMI/FNN/radius values; and numerical validation of MSE. Pelvis and spatiotemporal variables are BTS G-Walk exports. This project does not reverse-engineer proprietary BTS algorithms: retain vendor version, export fields and units in a local data dictionary.
 
-The main domains include:
+## Models, diagnostics and interpretation
 
-- rhythmicity and recurrence;
-- neuromotor complexity;
-- lower trunk kinematics.
+`models.py` implements the standard-normal, three-indicator latent model with lower-trunk PC1 as fixed-loading anchor. Posterior score SD is propagated in outcome models as a normal measurement-error approximation. Primary Bayesian logistic association: standardized latent score, age and disease duration. UPDRS-III, H&Y, LEDD, gait speed, and expanded adjustment are sensitivity models only; all associations are conditional and non-causal.
 
-### 3. Bayesian latent gait-instability model
+Use four NUTS chains, 3,000 warm-up + 3,000 retained draws each, `target_accept=.95`, and inspect rank R-hat, bulk/tail ESS and divergences. Carry out posterior predictive checks for measurement and outcome models.
 
-`03_spatiotemporal_latent gait instability.ipynb`
+`functional_form.py` provides fixed-slope probit, free-slope probit, and 4-knot restricted-cubic-spline sensitivity (5th/35th/65th/95th latent-score percentiles). Evaluate derivatives on a dense grid. The >=80%-of-maximum derivative region is descriptive and model-dependent, never a biological threshold. Compare models with PSIS-LOO, inspect Pareto-k, and use exact LOO refits when `k > .7`. Hypothetical 0.1/0.2/0.3/0.5 SD shifts are fitted-model contrasts, not interventions. The gait-speed reference model is descriptive only.
 
-Fits the Bayesian latent-variable model used to estimate participant-level latent gait instability from the domain-specific trunk biomechanical axes.
+## Limitations and reference
 
-### 4. Contrast analysis with gait speed
+The study is retrospective and cross-sectional: it cannot establish causal effects, prospective prediction, clinical cut-points, external validity, or transportability. See the manuscript and Supplementary S1–S8 for equations, priors, QC rationale and interpretation. Where implementation detail is omitted, create and preserve a protocol rather than guessing.
 
-`04_contrast_gait_speed.ipynb`
-
-Evaluates gait speed as a conventional spatiotemporal comparator and examines whether the latent gait-instability construct captures information not reducible to gait speed alone.
-
-### 5. Bayesian fall-occurrence model
-
-`05_bayesian_latent_gait_instability_and_falls_occurrence.ipynb`
-
-Models the association between latent gait instability and retrospective fall occurrence using Bayesian regression.
-
-### 6. Threshold-region and hypothetical contrasts
-
-`06_threshold_hypothetical_contrasts.ipynb`
-
-Evaluates a model-estimated transition region along the latent gait-instability continuum and estimates model-based hypothetical changes in fall-occurrence probability under reduced latent instability.
-
-### 7. Peer-review sensitivity analyses
-
-`scripts/07_sensitivity_covariate_adjustment_bayesian.py`
-
-Runs additional Bayesian covariate-adjustment sensitivity analyses requested during peer review, including adjustment for clinical severity and gait-related covariates.
-
-### 8. PCA domain-axis summaries
-
-`scripts/08_pca_domain_axes_summary.py`
-
-Generates supplementary PCA summaries for the trunk biomechanical domains, including additional rhythmicity-recurrence components.
-
----
-
-## Post second-round review: additional analyses
-
-The `review_analysis/` folder and notebook 10 require a user-supplied external
-participant table. They implement measurement, association and functional-form
-comparisons, component sensitivity and model-defined derivative regions. There
-is no input-data generator or automatic fallback; missing measurements or
-repeated IDs cause an error. Sample size is determined from the supplied table.
-
-Code availability is not evidence of execution or of any specific result. This
-new entry point uses complete participant-level features; its preprocessing and
-model assumptions must be reconciled with older analyses before combining their
-outputs. See [review_analysis/README.md](review_analysis/README.md) for the input
-schema, commands, validation status and limitations.
-
-Notebook 08 compares functional forms on clinical data; notebook 09 examines
-component retention. Their source code is retained. The existing scripts 07 and
-08 are also retained because covariate-adjustment analysis and PCA summary
-generation are distinct tasks, not redundant replacements for those notebooks.
-
-## Code-only distribution
-
-Generated figures, tables, datasets and model outputs are not part of the current
-tracked tree. Existing local figures can remain in the ignored `figures/` folder.
-Older Git commits may still contain previously published figures. Additional-analysis
-outputs must be saved outside this repository.
-
-Before committing, run:
-
-```sh
-python scripts/check_code_only.py --strip
-python scripts/check_code_only.py
-```
-
-This preserves notebook source cells while clearing saved outputs and execution
-counts. A GitHub Actions check rejects saved cell outputs and tracked artifacts.
-
----
-
-## Data Availability
-
-The clinical and wearable datasets used in the manuscript are not distributed in this repository because of ethical, privacy, and institutional restrictions.
-
-This repository provides analytical code. To reproduce the clinical analysis,
-users must supply an authorized dataset with the analytical structure required
-by the clinical notebooks and scripts. No dataset is bundled with the additional
-analysis module.
-
----
-
-## Reproducibility
-
-The workflow was developed in Python and uses standard scientific-computing and Bayesian-analysis libraries, including:
-
-- PyMC;
-- ArviZ;
-- pandas;
-- NumPy;
-- scikit-learn;
-- statsmodels;
-- matplotlib;
-- seaborn.
-
-Random seeds are fixed where appropriate to improve reproducibility.
-
-Notebook cell outputs and generated result files are intentionally not stored in the repository. The repository is organized to document the computational workflow rather than to archive intermediate generated outputs.
-
----
-
-## Citation
-
-If you use this repository or build upon this analytical framework, please cite the associated manuscript and Zenodo release.
-
-**Manuscript**
-
-Trabassi D. et al.  
-*Latent gait instability underlying retrospective fall occurrence in Parkinson’s disease.*
-
-Bibliographic details will be updated upon publication.
-
-**Repository DOI**
-
-https://doi.org/10.5281/zenodo.18961895
-
----
-
-## License
-
-This repository is released under the MIT License.
+Please cite the manuscript and repository DOI in `CITATION.cff`.
