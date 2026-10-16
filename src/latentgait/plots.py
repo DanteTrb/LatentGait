@@ -62,10 +62,15 @@ def fitted_figures(output, grid, primary_logit, forms, spline, mean, sd, *, synt
     order = np.argsort(mean)
     weights = abs(delta[order])
     if weights.sum() > 1e-15:
+        from .reporting import cumulative_contrast_interval
+
+        central = cumulative_contrast_interval(mean, abs(delta), rule="central_90")["interval"]
         fig, ax = plt.subplots(figsize=(5, 3.8))
         ax.plot(mean[order], np.cumsum(weights) / weights.sum())
+        ax.axvspan(central[0], central[1], alpha=0.15, label="Central 90% absolute contrast")
         ax.set(xlabel="Baseline latent instability (SD)", ylabel="Cumulative absolute fitted contrast", ylim=(0, 1))
         ax.set_title("Descriptive cumulative\n0.3-SD hypothetical contrast")
+        ax.legend(frameon=False)
         if synthetic:
             fig.suptitle("SYNTHETIC EXECUTION CHECK", fontsize=10)
         fig.tight_layout()

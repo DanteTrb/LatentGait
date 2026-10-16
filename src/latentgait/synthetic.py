@@ -51,13 +51,13 @@ def synthetic_frame(n=40, seed=173):
 
 def synthetic_protocol():
     return dict(
-        protocol_version=1,
+        protocol_version=2,
         seed=173,
         orientation={name: [1] * len(cols) for name, cols in DOMAINS.items()},
         orientation_rationale="Generated test convention only; no clinical interpretation",
         qc_protocol_reference="Generated test QC assertions only",
         measurement=dict(anchor_sd=0.1, loading_prior_sd=1.0, residual_prior_sd=0.5, acknowledge_archived_priors=True),
         bootstrap_scaling="refit",
-        cumulative_rule="lower_tail_90",
+        cumulative_rule="central_90",
         sampling=dict(chains=4, warmup=3000, draws=3000, target_accept=0.95),
     )

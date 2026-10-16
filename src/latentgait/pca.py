@@ -16,13 +16,21 @@ class DomainPCA:
     variance: pd.DataFrame
     bootstrap: pd.DataFrame
     scaling: pd.DataFrame
+    bootstrap_stability: pd.DataFrame
+    component_diagnostics: pd.DataFrame
 
 
-def fit_domain_pcas(frame, directions, *, n_bootstrap=500, seed=42, bootstrap_scaling="refit"):
+def fit_domain_pcas(frame, directions, *, n_bootstrap=500, seed=42, bootstrap_scaling="refit", n_bootstrap_check=None):
     if bootstrap_scaling not in ("refit", "fixed") or n_bootstrap < 2:
         raise ValueError("Select refit/fixed bootstrap scaling and at least two resamples")
     rng = np.random.default_rng(seed)
+    if n_bootstrap_check is not None and n_bootstrap_check < n_bootstrap:
+        raise ValueError("The bootstrap stability check must include at least the primary resamples")
+    total = max(n_bootstrap, n_bootstrap_check or n_bootstrap)
+    # One set of participant draws shared by all domains; no outcome stratification.
+    indices = rng.integers(0, len(frame), size=(total, len(frame)))
     scores, loading_rows, variance_rows, boot_rows, scaling = {}, [], [], [], []
+    checks, diagnostics = [], []
     for name, columns in DOMAINS.items():
         direction = np.asarray(directions[name], float)
         if direction.shape != (len(columns),) or not np.isin(direction, [-1, 1]).all():
@@ -45,22 +53,61 @@ def fit_domain_pcas(frame, directions, *, n_bootstrap=500, seed=42, bootstrap_sc
             variance_rows.append(dict(domain=name, component=j + 1, variance_ratio=pca.explained_variance_ratio_[j]))
             for c, value in zip(columns, row):
                 loading_rows.append(dict(domain=name, component=j + 1, feature=c, loading=value))
-        samples = []
-        for _ in range(n_bootstrap):
-            ix = rng.integers(0, len(z), size=len(z))
+        samples, alignments, dominance, closer_pc2 = [], [], [], []
+        for ix in indices:
             zb = zscore(raw[ix])[0] if bootstrap_scaling == "refit" else z[ix]
-            component = PCA(svd_solver="full").fit(zb).components_[0]
+            fitted = PCA(svd_solver="full").fit(zb)
+            component = fitted.components_[0]
             # Align to full-sample loading, not an outcome or an unstable feature-wise sign.
             dot = component @ components[0]
             if abs(dot) < 1e-10:
                 raise ValueError("Bootstrap PC1 cannot be sign-aligned to the reference")
             samples.append(component * np.sign(dot))
+            alignments.append(abs(dot))
+            dominance.append(fitted.explained_variance_[0] / fitted.explained_variance_[1])
+            closer_pc2.append(abs(component @ components[1]) > abs(dot))
         samples = np.asarray(samples)
         for j, c in enumerate(columns):
-            lo, hi = np.quantile(samples[:, j], [0.025, 0.975])
-            boot_rows.append(dict(domain=name, feature=c, mean=samples[:, j].mean(), lower=lo, upper=hi))
+            primary = samples[:n_bootstrap, j]
+            lo, hi = np.quantile(primary, [0.025, 0.975])
+            boot_rows.append(
+                dict(domain=name, feature=c, n_resamples=n_bootstrap, mean=primary.mean(), lower=lo, upper=hi)
+            )
+            check_lo, check_hi = np.quantile(samples[:, j], [0.025, 0.975])
+            checks.append(
+                dict(
+                    domain=name,
+                    feature=c,
+                    n_resamples=total,
+                    mean=samples[:, j].mean(),
+                    lower=check_lo,
+                    upper=check_hi,
+                    lower_change_vs_primary=check_lo - lo,
+                    upper_change_vs_primary=check_hi - hi,
+                )
+            )
+        diagnostics.append(
+            dict(
+                domain=name,
+                eigenvalue_ratio_pc1_pc2=pca.explained_variance_[0] / pca.explained_variance_[1],
+                eigenvalue_gap_pc1_pc2=pca.explained_variance_[0] - pca.explained_variance_[1],
+                alignment_min=min(alignments),
+                alignment_q025=np.quantile(alignments, 0.025),
+                alignment_median=np.median(alignments),
+                bootstrap_eigenvalue_ratio_q025=np.quantile(dominance, 0.025),
+                bootstrap_eigenvalue_ratio_q975=np.quantile(dominance, 0.975),
+                closer_to_reference_pc2_fraction=np.mean(closer_pc2),
+                n_resamples=total,
+            )
+        )
     return DomainPCA(
-        scores, pd.DataFrame(loading_rows), pd.DataFrame(variance_rows), pd.DataFrame(boot_rows), pd.DataFrame(scaling)
+        scores,
+        pd.DataFrame(loading_rows),
+        pd.DataFrame(variance_rows),
+        pd.DataFrame(boot_rows),
+        pd.DataFrame(scaling),
+        pd.DataFrame(checks),
+        pd.DataFrame(diagnostics),
     )
 
 

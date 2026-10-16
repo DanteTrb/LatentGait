@@ -70,6 +70,13 @@ class CohortTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "orientation"):
             validate_protocol(cfg)
 
+    def test_final_choices_are_fixed_in_protocol(self):
+        for field, value in [("bootstrap_scaling", "fixed"), ("cumulative_rule", "lower_tail_90")]:
+            cfg = synthetic_protocol()
+            cfg[field] = value
+            with self.assertRaises(ValueError):
+                validate_protocol(cfg)
+
     def test_private_output_guard(self):
         from latentgait.workflow import ROOT
 
@@ -87,6 +94,32 @@ class CohortTests(unittest.TestCase):
 
 
 class NumericalTests(unittest.TestCase):
+    def test_domains_share_draws_and_stability_extends_primary_draws(self):
+        frame = synthetic_frame()
+        from latentgait.cohort import DOMAINS
+
+        frame[DOMAINS["complexity"]] = frame[DOMAINS["kinematics"]].to_numpy()
+        directions = synthetic_protocol()["orientation"]
+        pca = fit_domain_pcas(frame, directions, n_bootstrap=6, n_bootstrap_check=12)
+        a = pca.bootstrap.loc[pca.bootstrap.domain.eq("kinematics"), ["mean", "lower", "upper"]]
+        b = pca.bootstrap.loc[pca.bootstrap.domain.eq("complexity"), ["mean", "lower", "upper"]]
+        np.testing.assert_allclose(a, b)
+        baseline = fit_domain_pcas(frame, directions, n_bootstrap=6)
+        self.assertTrue(pca.bootstrap.equals(baseline.bootstrap))
+        self.assertTrue(pca.bootstrap_stability.n_resamples.eq(12).all())
+        self.assertEqual(len(pca.component_diagnostics), 3)
+
+    def test_weighted_central_interval_is_empirical_and_tie_invariant(self):
+        from latentgait.reporting import cumulative_contrast_interval
+
+        r = cumulative_contrast_interval(np.arange(100), np.ones(100))
+        self.assertEqual(r["interval"], [4.0, 94.0])
+        self.assertGreaterEqual(r["included_weight_fraction"], 0.90)
+        tied = cumulative_contrast_interval(np.array([0.0, 1.0, 0.0, 2.0]), np.array([1.0, 2.0, 3.0, 4.0]))
+        shuffled = cumulative_contrast_interval(np.array([2.0, 0.0, 1.0, 0.0]), np.array([4.0, 3.0, 2.0, 1.0]))
+        self.assertEqual(tied, shuffled)
+        self.assertIsNone(cumulative_contrast_interval(np.arange(3), np.zeros(3))["interval"])
+
     def test_separate_domain_pca_bootstrap_and_retention(self):
         frame = synthetic_frame()
         directions = synthetic_protocol()["orientation"]

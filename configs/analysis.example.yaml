@@ -1,5 +1,5 @@
 # Copy OUTSIDE the checkout, resolve the nulls and document author decisions before running.
-protocol_version: 1
+protocol_version: 2
 seed: 42
 qc_protocol_reference: null  # reference to a locally approved eligibility/trial-selection protocol
 orientation:
@@ -14,8 +14,9 @@ measurement:
   loading_prior_sd: 1.0
   residual_prior_sd: 0.5
   acknowledge_archived_priors: false
-# Final S2 does not say whether to refit the scaler in each bootstrap.
-bootstrap_scaling: null # refit or fixed; 500 participant resamples in production
-# Final S6 does not define the endpoints of the cumulative 90% interval.
-cumulative_rule: null # lower_tail_90 (minimum to 90%) or central_90 (5% to 95%)
+# Confirmed in archived b3ecf65 notebook 02 cell 11; shared participant draws across domains.
+bootstrap_scaling: refit # 500 primary resamples + separate 5000-resample numerical check
+# Adopted final reconstruction choice; not certified as the historical Figure S1 rule.
+cumulative_rule: central_90 # empirical weighted 5th/95th percentiles, no KDE
+# Lower-tail90 is also reported as an explicitly secondary sensitivity.
 sampling: {chains: 4, warmup: 3000, draws: 3000, target_accept: 0.95}

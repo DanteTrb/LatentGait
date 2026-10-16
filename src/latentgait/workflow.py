@@ -16,10 +16,12 @@ from .cohort import COVARIATES, DOMAINS, link_tables, load_cohort, validate_fram
 from .diagnostics import outcome_loo, paired_elpd, ppc_prevalence, sampling_diagnostics
 from .functional_form import common_region
 from .models import Sampling, build_measurement, build_outcome, sample, score_summary, spline_spec
+from .models import prior_probability_curves
 from .pca import fit_domain_pcas, indicator_matrix
 from .reporting import (
     coefficient_summary,
     contrasts,
+    curve_region_checks,
     descriptive_tables,
     gait_speed_model,
     measurement_ppc,
@@ -55,7 +57,7 @@ def write_json(path, value):
 
 
 def validate_protocol(cfg):
-    if cfg.get("protocol_version") != 1:
+    if cfg.get("protocol_version") != 2:
         raise ValueError("Unsupported protocol version")
     for name, cols in DOMAINS.items():
         direction = cfg["orientation"][name]
@@ -70,10 +72,10 @@ def validate_protocol(cfg):
         )
     if any(measurement.get(k, 0) <= 0 for k in ("anchor_sd", "loading_prior_sd", "residual_prior_sd")):
         raise ValueError("Declare positive measurement scales")
-    if cfg.get("bootstrap_scaling") not in ("refit", "fixed"):
-        raise ValueError("Declare bootstrap scaling convention")
-    if cfg.get("cumulative_rule") not in ("lower_tail_90", "central_90"):
-        raise ValueError("Declare cumulative 90% interval convention")
+    if cfg.get("bootstrap_scaling") != "refit":
+        raise ValueError("Final protocol requires refitted bootstrap standardization")
+    if cfg.get("cumulative_rule") != "central_90":
+        raise ValueError("Final protocol requires the empirical central-90% cumulative interval")
     s = cfg.get("sampling", {})
     if s != {"chains": 4, "warmup": 3000, "draws": 3000, "target_accept": 0.95}:
         raise ValueError("Production sampling must be 4 x (3000 warmup + 3000 draws), target_accept .95")
@@ -96,6 +98,9 @@ def run(frame, cfg, output, *, digest, smoke=False, figures=False):
         config_sha256=sha256(json.dumps(cfg, sort_keys=True).encode()).hexdigest(),
         sampling=asdict(settings),
         bootstrap_resamples=8 if smoke else 500,
+        bootstrap_stability_resamples=16 if smoke else 5000,
+        prior_curve_draws=20 if smoke else 500,
+        additional_checks="5000 bootstrap; 70/80/90% regions; 1000/2000 grids; lower-tail90 cumulative sensitivity",
         figures=figures,
         cohort_n=len(frame),
         fallers=int(frame.fall_last_year_binary.sum()),
@@ -107,12 +112,25 @@ def run(frame, cfg, output, *, digest, smoke=False, figures=False):
         },
         software={
             p: version(p)
-            for p in ("numpy", "pandas", "scipy", "pymc", "arviz", "pytensor", "scikit-learn", "statsmodels")
+            for p in (
+                "latentgait",
+                "numpy",
+                "pandas",
+                "scipy",
+                "pymc",
+                "arviz",
+                "pytensor",
+                "scikit-learn",
+                "statsmodels",
+            )
         },
     )
     # Resolve the revision only for provenance; failures do not mutate the checkout.
     try:
         provenance["code_revision"] = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+        provenance["code_working_tree_dirty"] = bool(
+            subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True).strip()
+        )
     except (OSError, subprocess.SubprocessError):
         provenance["code_revision"] = "source_archive"
     write_json(out / "provenance.json", provenance)
@@ -145,8 +163,9 @@ def execute(frame, cfg, out, settings, smoke, *, figures=False):
         n_bootstrap=8 if smoke else 500,
         seed=settings.seed,
         bootstrap_scaling=cfg["bootstrap_scaling"],
+        n_bootstrap_check=16 if smoke else 5000,
     )
-    for name in ("loadings", "variance", "bootstrap", "scaling"):
+    for name in ("loadings", "variance", "bootstrap", "scaling", "bootstrap_stability", "component_diagnostics"):
         getattr(pca, name).to_csv(out / f"pca_{name}.csv", index=False)
     cov, cov_center, cov_sd = zscore(frame[COVARIATES])
     pd.DataFrame(dict(variable=COVARIATES, center=cov_center, sd=cov_sd)).to_csv(
@@ -184,7 +203,9 @@ def execute(frame, cfg, out, settings, smoke, *, figures=False):
         diagnostics["logit_" + strategy] = sampling_diagnostics(fit)
         ppc["logit_" + strategy] = ppc_prevalence(fit, y)
         associations.append(
-            coefficient_summary(fit, ["intercept", "beta_z", "beta_cov"]).assign(model="logit_" + strategy)
+            coefficient_summary(fit, ["intercept", "beta_z", "beta_cov"], link="logit").assign(
+                model="logit_" + strategy
+            )
         )
     mean, sd = means["pc1"], uncertainties["pc1"]
     for label, indices in [
@@ -197,14 +218,18 @@ def execute(frame, cfg, out, settings, smoke, *, figures=False):
         fit = sample(build_outcome("logit", mean, sd, y, cov[:, indices]), settings, ppc=True)
         diagnostics[label] = sampling_diagnostics(fit)
         ppc[label] = ppc_prevalence(fit, y)
-        associations.append(coefficient_summary(fit, ["intercept", "beta_z", "beta_cov"]).assign(model=label))
+        associations.append(
+            coefficient_summary(fit, ["intercept", "beta_z", "beta_cov"], link="logit").assign(model=label)
+        )
     pc2 = zscore(pca.scores["complexity"][:, 1])[0]
     incremental_cov = np.column_stack([cov[:, :2], pc2])
     incremental = sample(build_outcome("logit", mean, sd, y, incremental_cov), settings, ppc=True)
     diagnostics["incremental_complexity_pc2"] = sampling_diagnostics(incremental)
     ppc["incremental_complexity_pc2"] = ppc_prevalence(incremental, y)
     associations.append(
-        coefficient_summary(incremental, ["intercept", "beta_z", "beta_cov"]).assign(model="incremental_complexity_pc2")
+        coefficient_summary(incremental, ["intercept", "beta_z", "beta_cov"], link="logit").assign(
+            model="incremental_complexity_pc2"
+        )
     )
     # Store a term map: beta_cov is never left as an unexplained positional coefficient.
     terms = {"logit_" + s: COVARIATES[:2] for s in means}
@@ -224,10 +249,18 @@ def execute(frame, cfg, out, settings, smoke, *, figures=False):
     table.to_csv(out / "primary_logistic_curve.csv", index=False)
     spec = spline_spec(mean)
     no_cov = np.empty((len(y), 0))
-    forms, loos, regions = {}, {}, {}
+    forms, loos, regions, prior_tables, curve_checks = {}, {}, {}, [], {}
     for form in ("fixed", "free", "spline"):
         log.warning("Running functional form: %s", form)
-        trace = sample(build_outcome(form, mean, sd, y, no_cov, spline=spec), settings, ppc=True)
+        model = build_outcome(form, mean, sd, y, no_cov, spline=spec)
+        prior_curves = prior_probability_curves(
+            model, grid, form, spline=spec, draws=20 if smoke else 500, seed=settings.seed
+        )
+        prior_lo, prior_hi = np.quantile(prior_curves, [0.025, 0.975], axis=0)
+        prior_tables.append(
+            pd.DataFrame(dict(model=form, score=grid, mean=prior_curves.mean(0), lower=prior_lo, upper=prior_hi))
+        )
+        trace = sample(model, settings, ppc=True)
         forms[form] = trace
         diagnostics[form] = sampling_diagnostics(trace)
         ppc[form] = ppc_prevalence(trace, y)
@@ -236,9 +269,10 @@ def execute(frame, cfg, out, settings, smoke, *, figures=False):
             "free": ["tau", "slope"],
             "spline": ["intercept", "beta_linear", "beta_nonlinear", "sigma_nonlinear"],
         }[form]
-        coefficient_summary(trace, names).to_csv(out / f"{form}_parameters.csv", index=False)
+        coefficient_summary(trace, names, link="probit").to_csv(out / f"{form}_parameters.csv", index=False)
         table, regions[form] = probability_table(trace, grid, form, spec)
         table.to_csv(out / f"{form}_probability_curve.csv", index=False)
+        curve_checks[form] = curve_region_checks(trace, grid, form, spec)
         loos[form] = outcome_loo(trace, form, mean, sd, y, no_cov, spec, settings, exact=not smoke)
     loos["primary_logit"] = outcome_loo(fits["pc1"], "logit", mean, sd, y, cov[:, :2], None, settings, exact=not smoke)
     loos["incremental_pc2"] = outcome_loo(
@@ -270,6 +304,8 @@ def execute(frame, cfg, out, settings, smoke, *, figures=False):
     write_json(out / "latent_distribution_summaries.json", latent_summaries)
     regions["common_intersection"] = common_region([r["segments"] for r in regions.values()])
     write_json(out / "derivative_regions.json", regions)
+    write_json(out / "curve_region_sensitivity.json", curve_checks)
+    pd.concat(prior_tables, ignore_index=True).to_csv(out / "prior_probability_curves.csv", index=False)
     write_json(out / "posterior_predictive_checks.json", ppc)
     write_json(out / "sampling_diagnostics.json", diagnostics)
     if figures:

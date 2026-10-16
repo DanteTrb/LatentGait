@@ -15,6 +15,8 @@ jobs:
       - run: python scripts/check_code_only.py
       - name: Execute all stages on generated software data
         run: latentgait synthetic-check --output "${{ runner.temp }}/latentgait-synthetic-check" --figures
+      - name: Check final-protocol integration reports
+        run: python scripts/check_synthetic_run.py "${{ runner.temp }}/latentgait-synthetic-check"
       - name: Confirm no outputs entered the checkout
         run: |
           python scripts/check_code_only.py

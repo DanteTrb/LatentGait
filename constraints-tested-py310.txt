@@ -1,4 +1,4 @@
-# Resolved in a fresh Python 3.10 environment on macOS arm64 for version 0.3.
+# Resolved in a fresh Python 3.10 environment on macOS arm64; unchanged for 0.4.
 # Constraints, not a historical author-environment lock or platform/BLAS guarantee.
 arviz==0.23.4
 cachetools==7.2.2

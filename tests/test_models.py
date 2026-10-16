@@ -14,6 +14,7 @@ from latentgait.models import (
     build_measurement,
     build_outcome,
     marginal_probability,
+    prior_probability_curves,
     score_summary,
     spline_spec,
 )
@@ -21,6 +22,33 @@ from latentgait.synthetic import synthetic_frame
 
 
 class ModelTests(unittest.TestCase):
+    def test_odds_ratios_are_only_reported_for_logit_coefficients(self):
+        import arviz as az
+        from latentgait.reporting import coefficient_summary
+
+        values = np.linspace(-0.3, 0.6, 40).reshape(2, 20)
+        trace = az.from_dict(posterior={"beta_linear": values, "beta_z": values})
+        probit = coefficient_summary(trace, ["beta_linear"], link="probit")
+        self.assertNotIn("or_mean", probit.columns)
+        self.assertEqual(probit.parameter_scale.iloc[0], "probit")
+        measurement = coefficient_summary(trace, ["beta_z"])
+        self.assertNotIn("or_mean", measurement.columns)
+        logistic = coefficient_summary(trace, ["beta_z"], link="logit")
+        self.assertAlmostEqual(logistic.or_mean.iloc[0], np.exp(values).mean())
+        self.assertEqual(logistic.parameter_scale.iloc[0], "log_odds")
+
+    def test_spline_prior_curves_are_prior_only_probability_draws(self):
+        f = synthetic_frame()
+        mean = zscore(f.pelvis_tilt_range)[0]
+        spec = spline_spec(mean)
+        model = build_outcome(
+            "spline", mean, np.full(len(f), 0.1), f.fall_last_year_binary.to_numpy(), np.empty((len(f), 0)), spline=spec
+        )
+        p = prior_probability_curves(model, np.linspace(-2, 2, 21), "spline", spline=spec, draws=10, seed=19)
+        self.assertEqual(p.shape, (10, 21))
+        self.assertTrue(np.isfinite(p).all())
+        self.assertTrue(((p >= 0) & (p <= 1)).all())
+
     def test_production_nuts_settings(self):
         s = Sampling()
         self.assertEqual((s.chains, s.tune, s.draws, s.target_accept), (4, 3000, 3000, 0.95))
@@ -130,6 +158,17 @@ class ModelTests(unittest.TestCase):
             self.assertAlmostEqual(row.location, row.shift / 2, delta=0.0011)
             self.assertAlmostEqual(row.mean, 1 - 2 * ndtr(row.shift / 2), places=7)
         self.assertEqual(summary["cumulative_rule"], "lower_tail_90")
+
+    def test_curve_region_checks_preserve_the_predeclared_primary(self):
+        import arviz as az
+        from latentgait.reporting import curve_region_checks
+
+        trace = az.from_dict(posterior={"tau": np.zeros((2, 20))})
+        checks = curve_region_checks(trace, np.linspace(-3, 3, 1000), "fixed")
+        self.assertEqual(len(checks["checks"]), 6)
+        self.assertEqual(checks["primary_fraction"], 0.8)
+        self.assertEqual(checks["primary_grid_points"], 1000)
+        self.assertEqual(checks["refined_grid_points"], 2000)
 
 
 if __name__ == "__main__":

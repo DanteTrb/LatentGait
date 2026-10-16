@@ -119,29 +119,45 @@ def build_outcome(form, mean, sd, y, covariates, *, spline=None):
     return model
 
 
-def posterior_values(trace, name):
-    a = trace.posterior[name]
+def posterior_values(trace, name, *, group="posterior"):
+    a = getattr(trace, group)[name]
     return np.asarray(a.stack(sample=("chain", "draw")).transpose("sample", ...))
 
 
-def probability_draws(trace, score, form, covariates=None, spline=None):
+def probability_draws(trace, score, form, covariates=None, spline=None, *, group="posterior"):
     """Score is one fixed vector, or a (posterior samples, subjects) matrix."""
     score = np.asarray(score)
+    values = lambda name: posterior_values(trace, name, group=group)
     if form == "fixed":
-        eta = score - posterior_values(trace, "tau")[:, None]
+        eta = score - values("tau")[:, None]
     elif form == "free":
-        eta = posterior_values(trace, "slope")[:, None] * (score - posterior_values(trace, "tau")[:, None])
+        eta = values("slope")[:, None] * (score - values("tau")[:, None])
     else:
-        eta = posterior_values(trace, "intercept")[:, None]
+        eta = values("intercept")[:, None]
         if form == "logit":
-            eta = eta + posterior_values(trace, "beta_z")[:, None] * score
+            eta = eta + values("beta_z")[:, None] * score
         else:
             b = (rcs_basis(score, spline["knots"]) - spline["center"]) / spline["scale"]
-            eta = eta + posterior_values(trace, "beta_linear")[:, None] * b[..., 0]
-            eta = eta + np.sum(posterior_values(trace, "beta_nonlinear")[:, None, :] * b[..., 1:], axis=-1)
+            eta = eta + values("beta_linear")[:, None] * b[..., 0]
+            eta = eta + np.sum(values("beta_nonlinear")[:, None, :] * b[..., 1:], axis=-1)
         if covariates is not None and np.asarray(covariates).shape[1]:
-            eta = eta + posterior_values(trace, "beta_cov") @ np.asarray(covariates).T
+            eta = eta + values("beta_cov") @ np.asarray(covariates).T
     return expit(eta) if form == "logit" else ndtr(eta)
+
+
+def prior_probability_curves(model, grid, form, *, spline=None, draws=500, seed=42):
+    """Prior-only diagnostic at fixed grid scores; no outcome-derived prior tuning."""
+    import pymc as pm
+
+    names = {
+        "fixed": ["tau"],
+        "free": ["tau", "slope"],
+        "logit": ["intercept", "beta_z"],
+        "spline": ["intercept", "beta_linear", "beta_nonlinear"],
+    }[form]
+    with model:
+        prior = pm.sample_prior_predictive(draws=draws, var_names=names, random_seed=seed)
+    return probability_draws(prior, grid, form, spline=spline, group="prior")
 
 
 def marginal_probability(trace, mean, sd, form, covariates=None, spline=None, nodes=31):

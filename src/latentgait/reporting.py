@@ -8,9 +8,11 @@ from .models import posterior_values, probability_draws
 from .functional_form import derivative_region
 
 
-def coefficient_summary(trace, names):
+def coefficient_summary(trace, names, *, link=None):
     import arviz as az
 
+    if link not in (None, "logit", "probit"):
+        raise ValueError("Declare logit/probit link, or None for measurement parameters")
     rows = []
     for name in names:
         values = posterior_values(trace, name)
@@ -24,8 +26,9 @@ def coefficient_summary(trace, names):
                 hdi_lower=lo,
                 hdi_upper=hi,
                 probability_positive=float(np.mean(v > 0)),
+                parameter_scale="log_odds" if link == "logit" else "probit" if link == "probit" else "measurement",
             )
-            if name.startswith("beta"):
+            if link == "logit" and name.startswith("beta"):
                 odds = np.exp(v)
                 lo, hi = az.hdi(odds, hdi_prob=0.95)
                 row.update(or_mean=odds.mean(), or_hdi_lower=lo, or_hdi_upper=hi)
@@ -40,6 +43,57 @@ def probability_table(trace, grid, form, spline=None):
     region = derivative_region(grid, draws)
     table["derivative_of_mean"] = region.pop("derivative")
     return table, region
+
+
+def curve_region_checks(trace, grid, form, spline=None):
+    """Predeclared numerical/descriptive checks; no model/region selection by results."""
+    rows = []
+    for points in (len(grid), 2000):
+        x = np.linspace(grid[0], grid[-1], points)
+        draws = probability_draws(trace, x, form, spline=spline)
+        for fraction in (0.7, 0.8, 0.9):
+            region = derivative_region(x, draws, fraction=fraction)
+            region.pop("derivative")
+            rows.append(dict(grid_points=points, derivative_fraction=fraction, **region))
+    primary = next(r for r in rows if r["grid_points"] == len(grid) and r["derivative_fraction"] == 0.8)
+    refined = next(r for r in rows if r["grid_points"] == 2000 and r["derivative_fraction"] == 0.8)
+    a, b = primary["peak_location"], refined["peak_location"]
+    return dict(
+        checks=rows,
+        primary_grid_points=len(grid),
+        refined_grid_points=2000,
+        primary_fraction=0.8,
+        peak_location_change=None if a is None or b is None else abs(a - b),
+    )
+
+
+def cumulative_contrast_interval(scores, weights, *, rule="central_90"):
+    """Empirical weighted quantiles, combining tied baseline scores; no KDE."""
+    scores, weights = np.asarray(scores), np.asarray(weights)
+    if (
+        scores.ndim != 1
+        or scores.shape != weights.shape
+        or not len(scores)
+        or not np.isfinite(scores).all()
+        or not np.isfinite(weights).all()
+        or np.any(weights < 0)
+    ):
+        raise ValueError("Finite baseline scores and nonnegative matching weights are required")
+    if rule not in ("central_90", "lower_tail_90"):
+        raise ValueError("Unknown cumulative convention")
+    if weights.sum() <= 1e-15:
+        return dict(interval=None, included_weight_fraction=None)
+    order = np.argsort(scores, kind="stable")
+    support, starts = np.unique(scores[order], return_index=True)
+    grouped = np.add.reduceat(weights[order], starts)
+    cumulative = np.cumsum(grouped) / grouped.sum()
+    low = 0 if rule == "lower_tail_90" else int(np.searchsorted(cumulative, 0.05))
+    high = int(np.searchsorted(cumulative, 0.90 if rule == "lower_tail_90" else 0.95))
+    high = min(high, len(support) - 1)
+    return dict(
+        interval=[float(support[low]), float(support[high])],
+        included_weight_fraction=float(grouped[low : high + 1].sum() / grouped.sum()),
+    )
 
 
 def contrasts(trace, grid, *, baseline_scores, cumulative_rule):
@@ -76,15 +130,8 @@ def contrasts(trace, grid, *, baseline_scores, cumulative_rule):
     scores = np.asarray(baseline_scores)
     if scores.shape != means.shape or not np.isfinite(scores).all():
         raise ValueError("Baseline score order must use the same locked upstream participants")
-    order = np.argsort(scores)
-    weight = abs(means[order])
-    if weight.sum() <= 1e-15:
-        cumulative = None
-    else:
-        cumulative_fraction = np.cumsum(weight) / weight.sum()
-        low = 0 if cumulative_rule == "lower_tail_90" else int(np.searchsorted(cumulative_fraction, 0.05))
-        high = int(np.searchsorted(cumulative_fraction, 0.90 if cumulative_rule == "lower_tail_90" else 0.95))
-        cumulative = [float(scores[order[low]]), float(scores[order[min(high, len(order) - 1)]])]
+    cumulative = cumulative_contrast_interval(scores, abs(means), rule=cumulative_rule)
+    alternative = cumulative_contrast_interval(scores, abs(means), rule="lower_tail_90")
     # No individual scores/contrasts, IDs or sorted ranks are exported.
     summary = dict(
         shift=0.3,
@@ -93,8 +140,10 @@ def contrasts(trace, grid, *, baseline_scores, cumulative_rule):
         min_individual_posterior_mean=float(means.min()),
         max_individual_posterior_mean=float(means.max()),
         cohort_mean_cri=np.quantile(aggregate, [0.025, 0.975]).tolist(),
-        cumulative_interval=cumulative,
+        cumulative_interval=cumulative["interval"],
+        cumulative_interval_weight_fraction=cumulative["included_weight_fraction"],
         cumulative_rule=cumulative_rule,
+        lower_tail_90_sensitivity=alternative,
     )
     return pd.concat(curves, ignore_index=True), pd.DataFrame(maxima), summary
 
