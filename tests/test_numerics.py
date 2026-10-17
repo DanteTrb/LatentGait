@@ -101,7 +101,7 @@ class CohortTests(unittest.TestCase):
         validate_protocol(cfg)
 
     def test_final_choices_are_fixed_in_protocol(self):
-        for field, value in [("bootstrap_scaling", "fixed"), ("cumulative_rule", "lower_tail_90")]:
+        for field, value in [("bootstrap_scaling", "fixed"), ("cumulative_rule", "central_90")]:
             cfg = synthetic_protocol()
             cfg[field] = value
             with self.assertRaises(ValueError):
@@ -186,11 +186,11 @@ class NumericalTests(unittest.TestCase):
         self.assertTrue(pca.bootstrap_stability.n_resamples.eq(12).all())
         self.assertEqual(len(pca.component_diagnostics), 3)
 
-    def test_weighted_central_interval_is_empirical_and_tie_invariant(self):
+    def test_weighted_lower_tail_interval_is_empirical_and_tie_invariant(self):
         from latentgait.reporting import cumulative_contrast_interval
 
         r = cumulative_contrast_interval(np.arange(100), np.ones(100))
-        self.assertEqual(r["interval"], [4.0, 94.0])
+        self.assertEqual(r["interval"], [0.0, 89.0])
         self.assertGreaterEqual(r["included_weight_fraction"], 0.90)
         tied = cumulative_contrast_interval(np.array([0.0, 1.0, 0.0, 2.0]), np.array([1.0, 2.0, 3.0, 4.0]))
         shuffled = cumulative_contrast_interval(np.array([2.0, 0.0, 1.0, 0.0]), np.array([4.0, 3.0, 2.0, 1.0]))

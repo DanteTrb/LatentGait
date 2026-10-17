@@ -5,7 +5,7 @@ import numpy as np
 from .models import posterior_values, probability_draws
 
 
-def fitted_figures(output, grid, primary_logit, forms, spline, mean, sd, *, synthetic=False):
+def fitted_figures(output, grid, primary_logit, forms, spline, mean, sd, *, cumulative_rule, synthetic=False):
     import matplotlib
 
     matplotlib.use("Agg")
@@ -64,10 +64,10 @@ def fitted_figures(output, grid, primary_logit, forms, spline, mean, sd, *, synt
     if weights.sum() > 1e-15:
         from .reporting import cumulative_contrast_interval
 
-        central = cumulative_contrast_interval(mean, abs(delta), rule="central_90")["interval"]
+        interval = cumulative_contrast_interval(mean, abs(delta), rule=cumulative_rule)["interval"]
         fig, ax = plt.subplots(figsize=(5, 3.8))
         ax.plot(mean[order], np.cumsum(weights) / weights.sum())
-        ax.axvspan(central[0], central[1], alpha=0.15, label="Central 90% absolute contrast")
+        ax.axvspan(interval[0], interval[1], alpha=0.15, label="Lower-tail 90% absolute contrast")
         ax.set(xlabel="Baseline latent instability (SD)", ylabel="Cumulative absolute fitted contrast", ylim=(0, 1))
         ax.set_title("Descriptive cumulative\n0.3-SD hypothetical contrast")
         ax.legend(frameon=False)

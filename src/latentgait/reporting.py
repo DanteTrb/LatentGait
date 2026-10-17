@@ -67,7 +67,7 @@ def curve_region_checks(trace, grid, form, spline=None):
     )
 
 
-def cumulative_contrast_interval(scores, weights, *, rule="central_90"):
+def cumulative_contrast_interval(scores, weights, *, rule="lower_tail_90"):
     """Empirical weighted quantiles, combining tied baseline scores; no KDE."""
     scores, weights = np.asarray(scores), np.asarray(weights)
     if (
@@ -131,7 +131,7 @@ def contrasts(trace, grid, *, baseline_scores, cumulative_rule):
     if scores.shape != means.shape or not np.isfinite(scores).all():
         raise ValueError("Baseline score order must use the same locked upstream participants")
     cumulative = cumulative_contrast_interval(scores, abs(means), rule=cumulative_rule)
-    alternative = cumulative_contrast_interval(scores, abs(means), rule="lower_tail_90")
+    alternative = cumulative_contrast_interval(scores, abs(means), rule="central_90")
     # No individual scores/contrasts, IDs or sorted ranks are exported.
     summary = dict(
         shift=0.3,
@@ -143,7 +143,7 @@ def contrasts(trace, grid, *, baseline_scores, cumulative_rule):
         cumulative_interval=cumulative["interval"],
         cumulative_interval_weight_fraction=cumulative["included_weight_fraction"],
         cumulative_rule=cumulative_rule,
-        lower_tail_90_sensitivity=alternative,
+        central_90_alternative=alternative,
     )
     return pd.concat(curves, ignore_index=True), pd.DataFrame(maxima), summary
 

@@ -71,8 +71,8 @@ def validate_protocol(cfg):
         raise ValueError("Declare positive measurement scales")
     if cfg.get("bootstrap_scaling") != "refit":
         raise ValueError("Final protocol requires refitted bootstrap standardization")
-    if cfg.get("cumulative_rule") != "central_90":
-        raise ValueError("Final protocol requires the empirical central-90% cumulative interval")
+    if cfg.get("cumulative_rule") != "lower_tail_90":
+        raise ValueError("Final protocol requires the inclusive lower-tail-90% cumulative interval")
     s = cfg.get("sampling", {})
     if s != {"chains": 4, "warmup": 3000, "draws": 3000, "target_accept": 0.95}:
         raise ValueError("Production sampling must be 4 x (3000 warmup + 3000 draws), target_accept .95")
@@ -308,7 +308,9 @@ def execute(frame, cfg, out, settings, smoke, *, figures=False):
     if figures:
         from .plots import fitted_figures
 
-        fitted_figures(out, grid, fits["pc1"], forms, spec, mean, sd, synthetic=smoke)
+        fitted_figures(
+            out, grid, fits["pc1"], forms, spec, mean, sd, cumulative_rule=cfg["cumulative_rule"], synthetic=smoke
+        )
     return dict(sampling=diagnostics)
 
 

@@ -63,6 +63,6 @@ def synthetic_protocol():
         qc_protocol_reference="Generated test QC assertions only",
         measurement=dict(anchor_sd=0.1, loading_prior_sd=1.0, residual_prior_sd=0.5, acknowledge_archived_priors=True),
         bootstrap_scaling="refit",
-        cumulative_rule="central_90",
+        cumulative_rule="lower_tail_90",
         sampling=dict(chains=4, warmup=3000, draws=3000, target_accept=0.95),
     )
