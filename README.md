@@ -1,6 +1,6 @@
 # LatentGait replication package
 
-Computational companion and analytical pipeline for *Latent gait instability underlying retrospective fall occurrence in Parkinson's disease* and its final Supplementary Sections S1–S8. It supports the analyses reported in the manuscript. The anonymized analytical dataset is publicly available through Zenodo (DOI: [10.5281/zenodo.18095243](https://doi.org/10.5281/zenodo.18095243)). No participant identifiers, fitted cohort results, logs, posterior draws, or generated figures are distributed in this repository.
+Computational companion and analytical pipeline for *Latent gait instability underlying retrospective fall occurrence in Parkinson's disease* and its final Supplementary Sections S1–S8. It supports the analyses reported in the manuscript. The anonymized analytical dataset is publicly available through Zenodo (DOI: [10.5281/zenodo.23439734](https://doi.org/10.5281/zenodo.18095243)). No participant identifiers, fitted cohort results, logs, posterior draws, or generated figures are distributed in this repository.
 
 Version 0.4.1 implements the analytical stages reported in the manuscript, including the exploratory, hypothesis-generating latent biomechanical framework, functional-form sensitivity analyses, model-estimated hypothetical contrasts, and posterior predictive checks. PCA sign conventions and model specifications are documented in the public configuration and [protocol](docs/PROTOCOL.md).
 
