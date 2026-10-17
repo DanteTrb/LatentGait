@@ -19,7 +19,7 @@ def check(root):
         "complexity": "largest_absolute_loading_positive",
     }
     assert meta["protocol"]["bootstrap_scaling"] == "refit"
-    assert meta["protocol"]["cumulative_rule"] == "central_90"
+    assert meta["protocol"]["cumulative_rule"] == "lower_tail_90"
     with (root / "pca_loadings.csv").open() as handle:
         loading_rows = list(csv.DictReader(handle))
     groups = {}
@@ -42,7 +42,7 @@ def check(root):
             rows = list(csv.DictReader(handle))
         assert rows and all(int(r["n_resamples"]) == expected for r in rows)
     summary = json.loads((root / "aggregate_subject_contrasts.json").read_text())
-    assert summary["cumulative_rule"] == "central_90"
+    assert summary["cumulative_rule"] == "lower_tail_90"
     if summary["cumulative_interval"] is not None:
         assert summary["cumulative_interval_weight_fraction"] >= 0.9 - 1e-12
     regions = json.loads((root / "curve_region_sensitivity.json").read_text())
